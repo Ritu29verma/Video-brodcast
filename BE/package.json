@@ -11,7 +11,15 @@
     "socket.io": "^4.8.1"
   },
   "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  }
+    "start": "node server.js"
+  },
+  "name": "be",
+  "version": "1.0.0",
+  "main": "server.js",
+  "devDependencies": {},
+  "author": "Ritu Verma",
+  "license": "ISC",
+  "description": ""
 }

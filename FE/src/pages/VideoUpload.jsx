@@ -11,7 +11,7 @@ const VideoUpload = ({ setStreamingVideo }) => {
     formData.append('video', file);
 
     try {
-      const response = await axios.post('http://localhost:5000/upload', formData, {
+      const response = await axios.post('http://localhost:5000/upload/video', formData, {
         onUploadProgress: (progressEvent) => {
           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setUploadProgress(progress);

@@ -1,29 +1,39 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import io from 'socket.io-client'; 
-import Hls from 'hls.js';
+import io from 'socket.io-client';
 
 const socket = io.connect('http://localhost:5000');
 
 const VideoUploadAndStream = ({ setStreamingVideo }) => {
   const videoRef = useRef(null);
   const [file, setFile] = useState(null);
-  const [videoUrl, setVideoUrl] = useState('');
   const [uploadedVideos, setUploadedVideos] = useState([]);
-  const [selectedVideo, setSelectedVideo] = useState(null);
   const [progress, setProgress] = useState(0); // Progress state for the progress bar
   const navigate = useNavigate();
 
   useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/admin/saved-videos');
+        console.log(response.data); // Check if response.data is an array
+        setUploadedVideos(response.data.videos || []); // Ensure it's an array
+      } catch (error) {
+        console.error('Error fetching videos:', error);
+      }
+    };
+
+    fetchVideos();
+
+
+
     socket.on('start_stream', (url) => {
       setStreamingVideo(url); // Set the streaming URL from server broadcast
     });
-  
-    return () => socket.off('start_stream'); // Cleanup listener on unmount
-  }, []);
 
-  
+    return () => socket.off('start_stream'); // Cleanup listener on unmount
+  }, [setStreamingVideo]);
+
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
     setProgress(0); // Reset progress on new file selection
@@ -37,22 +47,22 @@ const VideoUploadAndStream = ({ setStreamingVideo }) => {
     formData.append('video', file);
 
     try {
-      const response = await axios.post('http://localhost:5000/upload', formData, {
+      const response = await axios.post('http://localhost:5000/upload/video', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'multipart/form-data',
         },
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setProgress(percentCompleted);
-        }
+        },
       });
-    // Update the uploadedVideos state with both videoUrl and thumbnailUrl
-    setUploadedVideos((prev) => [
+
+      setUploadedVideos((prev) => [
         ...prev,
         {
           videoUrl: response.data.videoUrl,
-          thumbnailUrl: response.data.thumbnailUrl
-        }
+          thumbnailUrl: response.data.thumbnailUrl,
+        },
       ]);
       setFile(null);
       setProgress(0); // Reset progress after successful upload
@@ -64,46 +74,29 @@ const VideoUploadAndStream = ({ setStreamingVideo }) => {
   const handleStreamVideo = (videoUrl) => {
     setStreamingVideo(videoUrl);
     socket.emit('start_stream', videoUrl);
-    navigate('/');
+    navigate('/admin');
   };
 
-//   const handleSaveVideo = (videoUrl) => {
-//     fetch('http://localhost:5000/admin/save-video', {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify({ videoUrl }),
-//     })
-//       .then((response) => response.json())
-//       .then((data) => {
-//         alert(data.message);
-//       })
-//       .catch((error) => console.error('Error saving video', error));
-//   };
+  const handleSaveVideo = (videoUrl) => {
+    const videoName = videoUrl.split('/').pop(); // Extract video name from URL
 
-const handleSaveVideo = (videoUrl) => {
-    // Extract video name from URL or generate it dynamically (you may need to modify this)
-    const videoName = videoUrl.split('/').pop(); // Assuming the name is the last part of the URL
-  
     fetch('http://localhost:5000/admin/save-video', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        name: videoName,    // Name of the video
-        path: videoUrl,     // Path/URL to the video
+        name: videoName,
+        path: videoUrl,
       }),
     })
       .then((response) => response.json())
       .then((data) => {
         alert(data.message);
       })
-      .catch((error) => console.error('Error saving video', error));
+      .catch((error) => console.error('Error saving video:', error));
   };
 
-  
   const handleDeleteVideo = (videoUrl) => {
     fetch('http://localhost:5000/admin/delete-video', {
       method: 'DELETE',
@@ -115,9 +108,9 @@ const handleSaveVideo = (videoUrl) => {
       .then((response) => response.json())
       .then((data) => {
         alert(data.message);
-        setUploadedVideos(uploadedVideos.filter((url) => url !== videoUrl));  // Remove deleted video from the list
+        setUploadedVideos((prev) => prev.filter((video) => video.videoUrl !== videoUrl)); // Remove deleted video from the list
       })
-      .catch((error) => console.error('Error deleting video', error));
+      .catch((error) => console.error('Error deleting video:', error));
   };
 
   return (
@@ -159,7 +152,7 @@ const handleSaveVideo = (videoUrl) => {
             className="relative group rounded-lg overflow-hidden shadow-lg border border-gray-200 bg-white"
           >
             <img
-              src={video.thumbnailUrl} // Use the actual thumbnail generated by ffmpeg
+              src={video.thumbnailUrl}
               alt={`Video ${index + 1}`}
               className="w-full h-40 object-cover"
             />
@@ -174,16 +167,6 @@ const handleSaveVideo = (videoUrl) => {
           </div>
         ))}
       </div>
-
-      {/* Selected Video Player */}
-      {selectedVideo && (
-        <div className="mt-8 text-center">
-          <h3 className="text-xl font-semibold mb-4 text-blue-600">Currently Streaming Video</h3>
-          <video ref={videoRef} controls className="w-full max-w-lg mx-auto rounded shadow-lg" src={selectedVideo}>
-            Your browser does not support the video tag.
-          </video>
-        </div>
-      )}
     </div>
   );
 };
