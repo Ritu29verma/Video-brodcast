@@ -1,179 +1,131 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
+const socketIo = require('socket.io');
 const cors = require('cors');
-const multer = require('multer');
+const path = require('path');
 const fs = require('fs');
-const ffmpeg = require('fluent-ffmpeg');
-const bodyParser = require('body-parser');
-const adminRoutes = require('./routes/admin');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
+
+// Setup Socket.IO with CORS
+const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST"],
-    credentials: true
-  }
-});
-
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.json());
-app.use('/videos', express.static(path.join(__dirname, 'videos')));
-
-// Configure Multer storage for video uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, 'videos');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir); // Create 'videos' folder if it doesn't exist
-    cb(null, dir);
+    origin: 'http://localhost:5173', // Frontend origin
+    methods: ['GET', 'POST'],
+    credentials: true,
   },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `${uniqueSuffix}-${file.originalname}`);
-  }
-});
-const upload = multer({ storage: storage });
-
-mongoose.connect('mongodb://localhost:27017/video-streaming', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log(err));
-
-let currentTimestamp = 0;
-let isVideoPlaying = false;
-let videoUrl = '';
-
-// Increment timestamp every second if video is playing
-const incrementTimestamp = () => {
-  if (isVideoPlaying) {
-    currentTimestamp += 1;
-    io.emit('current_time', currentTimestamp); // Broadcast timestamp to all clients
-  }
-};
-setInterval(incrementTimestamp, 1000);
-
-// Upload route to handle video file upload and FFmpeg processing
-app.post('/upload', upload.single('video'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: 'No file uploaded' });
-  }
-
-  const inputFilePath = req.file.path;
-  const videoName = path.parse(req.file.filename).name;
-  const outputDir = path.join(__dirname, 'videos', videoName);
-
-  // Ensure output directory exists
-  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
-
-  const outputVideoPath = `${outputDir}/output.m3u8`;
-  const thumbnailPath = `${outputDir}/thumbnail.jpg`;
-
-  // Generate thumbnail and convert video to HLS
-  ffmpeg(inputFilePath)
-    .screenshots({
-      timestamps: ['50%'],
-      filename: 'thumbnail.jpg',
-      folder: outputDir,
-      size: '320x240'
-    })
-    .on('end', () => {
-      console.log('Thumbnail created successfully');
-
-      ffmpeg(inputFilePath)
-        .output(outputVideoPath)
-        .outputOptions([
-          '-profile:v baseline',
-          '-level 3.0',
-          '-start_number 0',
-          '-hls_time 1',
-          '-hls_list_size 0',
-          // '-hls_flags delete_segments+append_list', // Optimize for low-latency
-          '-f hls',
-          '-g 30'
-        ])
-        .on('end', () => {
-          fs.unlinkSync(inputFilePath); // Clean up uploaded file
-
-          // Set the new video URL
-          videoUrl = `http://localhost:5000/videos/${videoName}/output.m3u8`;
-
-          // Emit the new video URL to all clients
-          io.emit('start_stream', videoUrl);
-
-          res.status(200).json({
-            message: 'File uploaded and processed successfully!',
-            videoUrl: videoUrl,
-            thumbnailUrl: `http://localhost:5000/videos/${videoName}/thumbnail.jpg`
-          });
-        })
-        .on('error', (err) => {
-          console.error('Error processing video:', err);
-          if (!res.headersSent) {
-            res.status(500).json({ message: 'Error processing video' });
-          }
-        })
-        .run();
-    })
-    .on('error', (err) => {
-      console.error('Error creating thumbnail:', err);
-      if (!res.headersSent) {
-        res.status(500).json({ message: 'Error creating thumbnail' });
-      }
-    });
 });
 
-// Socket.IO connection handler
-io.on('connection', (socket) => {
-  console.log('New user connected');
+// Use CORS for REST API endpoints
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 
-  // Send current state to the new client on request
-  socket.on('request_initial_state', () => {
-    socket.emit('initial_state', {
-      currentTime: currentTimestamp,
-      isPlaying: isVideoPlaying,
-      videoUrl: videoUrl
-    });
-  });
+// Static route to serve videos from the "videos" folder
+const videosDir = path.join(__dirname, 'videos');
+if (!fs.existsSync(videosDir)) fs.mkdirSync(videosDir);
+app.use('/videos', express.static(videosDir));
 
-  // Handle admin-triggered start of a video stream
-  socket.on('start_stream', (url) => {
-    videoUrl = url;
-    currentTimestamp = 0; // Reset timestamp on new video
-    console.log('Broadcasting video URL:', videoUrl);
-    io.emit('start_stream', videoUrl); // Broadcast to all clients
-  });
-
-  // Listen for admin control actions
-  socket.on('admin_control', (action) => {
-    console.log(`Admin control: ${action}`);
-    if (action === 'play') {
-      isVideoPlaying = true;
-    } else if (action === 'pause') {
-      isVideoPlaying = false;
-    } else if (action === 'restart') {
-      currentTimestamp = 0;
-      isVideoPlaying = true;
+// Endpoint to list all videos in the "videos" folder
+app.get('/videos-list', (req, res) => {
+  fs.readdir(videosDir, (err, files) => {
+    if (err) {
+      console.error('Error reading videos directory:', err);
+      return res.status(500).json({ error: 'Unable to list videos' });
     }
-    io.emit('admin_control', action); // Broadcast the action to all clients
+    const videoFiles = files.filter((file) => /\.(mp4|mov|avi|mkv)$/i.test(file));
+    res.status(200).json({ videos: videoFiles });
+  });
+});
+
+// Video state (to sync admin and clients)
+let videoState = {
+  url: null,
+  isPlaying: false,
+  currentTime: 0,
+  isMuted: false
+};
+
+let currentVideoUrl = '';  // Track the current video URL
+let currentTime = 0;       // Track the current time of the video
+let isPlaying = false;     // Track whether the video is playing or paused
+let isMuted = false;       // Track the mute state
+
+// Socket.IO events
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+    // Listen for the admin selecting a new video
+    socket.on('admin_select_video', (videoUrl) => {
+      console.log('Admin selected video:', videoUrl);
+  
+      // Stop the current video and broadcast the new video URL
+      isPlaying = false;  // Stop the current video
+      currentVideoUrl = videoUrl;
+      currentTime = 0;  // Reset time or keep it based on your preference
+      isMuted = false;   // Optionally reset mute state
+  
+      // Broadcast the new video to all clients
+      io.emit('video_change', {
+        url: currentVideoUrl,
+        currentTime: currentTime,
+        isPlaying: isPlaying,
+        isMuted: isMuted,
+      });
+      io.emit('admin_control', videoState);
+    });
+
+  socket.on('play', () => {
+    console.log('Play command received');
+    io.emit('play'); // Broadcast play to all clients
   });
 
-  // Send current timestamp periodically to all clients
-  socket.emit('current_time', currentTimestamp);
+  socket.on('pause', () => {
+    console.log('Pause command received');
+    io.emit('pause'); // Broadcast pause to all clients
+  });
+
+  socket.on('mute', () => {
+    console.log('Mute command received');
+    io.emit('mute'); // Broadcast mute to all clients
+  });
+
+  socket.on('unmute', () => {
+    console.log('Unmute command received');
+    io.emit('unmute'); // Broadcast unmute to all clients
+  });
+
+  socket.on('restart', () => {
+    console.log('Restart command received');
+    io.emit('restart'); // Broadcast restart to all clients
+  });
+
+  // Send the current video state to new clients
+  socket.emit('start_stream', videoState);
+
+  // Listen to admin commands
+  socket.on('admin_control', (state) => {
+    videoState = { ...videoState, ...state };
+
+    
+
+    // Broadcast updated state to all clients
+    io.emit('client_control', videoState);
+  });
+
+  // Handle fetch_current_state event
+socket.on('fetch_current_state', (data, callback) => {
+  console.log('Client requested current state');
+  callback(videoState); // Send the current video state to the client
+});
+
 
   socket.on('disconnect', () => {
-    console.log('User disconnected');
+    console.log('User disconnected:', socket.id);
   });
+}); 
+
+// Start the server
+const PORT = 5000;
+server.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
-
-// Use admin routes
-app.use('/admin', adminRoutes);
-
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
