@@ -13,30 +13,34 @@ const Client = () => {
   // Listen for real-time updates from the admin
   useEffect(() => {
     socket.on('admin_control', (state) => {
-      console.log('Received video state from admin:', state);
       setVideoState(state);
-
-      // Ensure that the video starts from 0 if it's the new selected video
+  
       const videoElement = videoRef.current;
-      if (videoElement && state.url !== videoElement.src) {
-        videoElement.src = state.url;
-        videoElement.currentTime = 0; // Set to 0 to start fresh
-        videoElement.load(); // Reload the video
-
-        if (state.isPlaying) {
+      if (videoElement && state.url) {
+        if (videoElement.src !== state.url) {
+          videoElement.src = state.url;
+          videoElement.currentTime = 0;
+          videoElement.load();
+  
+          videoElement.onloadeddata = () => {
+            if (state.isPlaying) {
+              videoElement
+                .play()
+                .then(() => console.log('Client video started playing'))
+                .catch((err) => console.error('Error playing video:', err));
+            }
+          };
+        } else if (state.isPlaying) {
           videoElement.play().catch((err) => console.error('Error playing video:', err));
         } else {
           videoElement.pause();
         }
-
         videoElement.muted = state.isMuted;
       }
     });
-
-    return () => {
-      socket.off('admin_control');
-    };
-  }, []);
+  
+    return () => socket.off('admin_control');
+  }, []);  
 
  // Listen for real-time updates from the admin
  useEffect(() => {
@@ -133,9 +137,7 @@ const Client = () => {
     socket.on('start_stream', (state) => {
       console.log('Received initial state:', state);
       setAdminState(state);
-      setVideoUrl(state.url);
-
-      // Apply the initial video state
+  
       const videoElement = videoRef.current;
       if (state.url) {
         setVideoUrl(state.url);
@@ -146,13 +148,37 @@ const Client = () => {
         }
       }
     });
-
-     // Listen for play, pause, mute, unmute, and restart commands from admin
-     socket.on('play', () => {
+  
+    // Listen for video change
+    socket.on('video_change', (state) => {
+      console.log('Video changed to:', state);
+      setAdminState(state);
+  
       const videoElement = videoRef.current;
-      if (videoElement) {
-        videoElement.play()
-          .catch((err) => console.error('Error playing video:', err));
+      if (state.url) {
+        setVideoUrl(state.url);
+        if (videoElement) {
+          videoElement.src = state.url;
+          videoElement.currentTime = state.currentTime || 0;
+          videoElement.muted = state.isMuted || false;
+  
+          if (state.isPlaying) {
+            videoElement.play().catch((err) => {
+              console.error('Error playing video:', err);
+            });
+          }
+        }
+      }
+    });
+  
+    // Listen for play command
+    socket.on('play', () => {
+      console.log('Play command received');
+      const videoElement = videoRef.current;
+      if (videoElement && videoElement.src) {
+        videoElement.play().catch((err) => console.error('Error playing video:', err));
+      } else {
+        console.warn('No valid video source to play.');
       }
     });
 

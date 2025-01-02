@@ -9,6 +9,7 @@ const Admin = () => {
   const [videoList, setVideoList] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const videoRef = useRef(null);
   const [currentState, setCurrentState] = useState({
     url: null,
@@ -26,7 +27,6 @@ const Admin = () => {
       .catch((error) => console.error('Error fetching videos:', error));
   }, []);
 
-  
 
   // Emit the current video state every millisecond while playing
   useEffect(() => {
@@ -55,24 +55,45 @@ const Admin = () => {
     // Create the video URL from the selected video name
     const videoUrl = `http://localhost:5000/videos/${video}`;
   
-    // Set the selected video state
-    setSelectedVideo(videoUrl);
-  
     // Prepare the updated state for the new video
     const updatedState = {
       url: videoUrl,
-      currentTime: 0,  // You can adjust this if needed (e.g., preserve the last known time)
-      isPlaying: false,  // Initially stop the video (it will start playing after receiving the play command)
-      isMuted: isMuted,  // Keep the current mute state
-      action: 'select'   // Indicate the action being performed
+      currentTime: 0, // Start from the beginning
+      isPlaying: true, // Start playing the video immediately
+      isMuted: isMuted, // Keep the current mute state
+      action: ['select', 'play'], // Indicate both actions being performed
     };
   
-    // Set the current state for UI or further use
+    // Update the selected video and current state
+    setSelectedVideo(videoUrl);
     setCurrentState(updatedState);
   
-    // Emit the updated state to the server to notify all clients
+    // Emit the updated state to the server
     socket.emit('admin_select_video', updatedState);
+  
+    // Handle the video element
+    if (videoRef.current) {
+      videoRef.current.pause(); // Pause any existing playback
+      videoRef.current.src = videoUrl; // Set the new video source
+      videoRef.current.currentTime = 0; // Start from the beginning
+      videoRef.current.muted = isMuted; // Ensure mute state matches
+  
+      // Force play after loading
+      videoRef.current.load(); // Load the video
+      videoRef.current
+        .play()
+        .then(() => {
+          console.log('Video started playing successfully.');
+        })
+        .catch((error) => {
+          console.error('Error playing video:', error);
+          // Handle autoplay restrictions
+          videoRef.current.muted = true;
+          videoRef.current.play().catch((err) => console.error('Autoplay retry failed:', err));
+        });
+    }
   };
+  
   
 
   const handlePlay = () => {
@@ -166,25 +187,33 @@ const Admin = () => {
                 <li key={video}>
                   <button
                     onClick={() => handleSelectVideo(video)}
+                    
                     className={`w-full text-left px-4 py-2 rounded ${
                       selectedVideo === `http://localhost:5000/videos/${video}`
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-700 text-gray-200'
                     } hover:bg-blue-500`}
                   >
-                    {video}
+                     Play {video}
                   </button>
                 </li>
               ))}
             </ul>
           </div>
           {selectedVideo && (
-            <video
-              ref={videoRef}
-              src={selectedVideo}
-              controls={false}
-              className="w-full max-w-3xl mb-6 rounded shadow-lg"
-            />
+           <video
+           ref={videoRef}
+           
+           muted={isMuted}
+           onPlay={() => setIsPlaying(true)}
+           onPause={() => setIsPlaying(false)}
+           onTimeUpdate={() =>
+             setCurrentState((prevState) => ({
+               ...prevState,
+               currentTime: videoRef.current.currentTime,
+             }))
+           }
+         />
           )}
           <div className="flex gap-4">
             <button onClick={handlePlay} className="bg-green-500 px-4 py-2 rounded hover:bg-green-600">

@@ -55,27 +55,38 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
     // Listen for the admin selecting a new video
-    socket.on('admin_select_video', (videoUrl) => {
-      console.log('Admin selected video:', videoUrl);
-  
-      // Stop the current video and broadcast the new video URL
-      isPlaying = false;  // Stop the current video
-      currentVideoUrl = videoUrl;
-      currentTime = 0;  // Reset time or keep it based on your preference
-      isMuted = false;   // Optionally reset mute state
-  
-      // Broadcast the new video to all clients
-      io.emit('video_change', {
-        url: currentVideoUrl,
-        currentTime: currentTime,
-        isPlaying: isPlaying,
-        isMuted: isMuted,
-      });
+    socket.on('admin_select_video', (state) => {
+      if (!state || !state.url) {
+        console.error('Invalid state received from admin_select_video:', state);
+        return;
+      }
+    
+      console.log('Admin selected video:', state.url);
+    
+      // Update the video state
+      videoState = {
+        ...videoState,
+        url: state.url,
+        currentTime: 0,
+        isPlaying: true,
+        isMuted: state.isMuted,
+      };
+    
+      // Broadcast the updated state to all connected clients
       io.emit('admin_control', videoState);
     });
+    
+
+      // Handle video change
+  socket.on('video_change', (state) => {
+    currentVideoState = { ...state, currentTime: 0 }; // Reset time for new video
+    console.log('Admin changed video:', currentVideoState.url);
+    io.emit('video_change', currentVideoState); // Broadcast to all clients
+  });
 
   socket.on('play', () => {
     console.log('Play command received');
+    isPlaying = true;
     io.emit('play'); // Broadcast play to all clients
   });
 
