@@ -1,42 +1,94 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+
+
+.react-tel-input .form-control {
+  position: relative;
+  font-size: 14px;
+  letter-spacing: 0.01rem;
+  margin-top: 0 !important;
+  margin-bottom: 16px;
+  padding: 8px;
+  padding-left: 48px;
+  margin-left: 0;
+  background: #1f2937;
+  border: none;
+  border-radius: 8px;
+  line-height: 25px;
+  height: 35px; 
+  width: 100%; 
+  outline: none; 
+  font-weight: 250; 
+  color: #e5e7eb; 
+  box-sizing: border-box; 
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+
+.react-tel-input .selected-flag {
+  outline: none;
+  position: relative;
+  width: 38px;
+  height: 100%;
+  padding: 0 0 0 8px;
+  border: none; /* Remove the border */
+  background: #1f2937;
+  transition: background-color 0.3s ease; /* Smooth transition */
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.react-tel-input .selected-flag:hover {
+  background: #374151; /* New hover color */
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.react-tel-input .flag-dropdown {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  padding: 0;
+  margin: 8px;
+  border-radius: 8px;
+  background-color: #1f2937;
+  border: none;
+  transition: background-color 0.1s ease; /* Smooth transition */
+}
+/* .react-tel-input {
+  width: 100%; 
+} */
+
+.react-tel-input .flag-dropdown:hover {
+  background-color: #374151; /* New hover color */
 }
 
-.card {
-  padding: 2em;
+.react-tel-input * {
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  border: none; /* Remove all borders */
 }
 
-.read-the-docs {
-  color: #888;
+.react-tel-input .country-list {
+  outline: none;
+  z-index: 1;
+  list-style: none;
+  position: absolute;
+  padding: 0;
+  margin: 10px 0 10px -1px;
+  box-shadow: 1px 2px 10px rgba(0, 0, 0, 0.35);
+  background-color: #1f2937;
+  width: 300px;
+  max-height: 150px;
+  overflow-y: scroll;
+  border-radius: 0 0 3px 3px;
+
+  /* Hide scrollbar */
+  scrollbar-width: none; /* For Firefox */
+}
+
+.react-tel-input .country-list::-webkit-scrollbar {
+  display: none; /* For Chrome, Safari, and Edge */
+}
+
+
+.react-tel-input .country-list .country.highlight {
+  background-color: #374151;
+}
+
+.react-tel-input .country-list .country:hover{
+  background-color: #374151;
 }

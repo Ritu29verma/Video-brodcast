@@ -1,16 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
-import io from 'socket.io-client';
-
-const socket = io('http://localhost:5000');
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import socket from "../components/socket";
 
 const Admin = () => {
-  const [password, setPassword] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [videoList, setVideoList] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
   const videoRef = useRef(null);
+  const [coinReach, setCoinReach] = useState(0); 
+  const [currentMultiplier, setCurrentMultiplier] = useState(0);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [isVideoPrepared, setIsVideoPrepared] = useState(false);
   const [currentState, setCurrentState] = useState({
     url: null,
     isPlaying: false,
@@ -18,83 +20,204 @@ const Admin = () => {
     isMuted: false,
     action: null,
   });
+  const navigate = useNavigate();
+  const [stopLoop, setStopLoop] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    socket.emit('admin_logout');
+    navigate("/login");
+    resetVideoState();
+  };
+
+  const resetVideoState = () => {
+    const resetState = {
+      url: null,
+      currentTime: 0,
+      isMuted: false,
+      isPlaying: false,
+      action: null,
+    };
+    setCurrentState(resetState);
+    if (videoRef.current) {
+      videoRef.current.src = '';
+      videoRef.current.currentTime = 0;
+    }
+    socket.emit('admin_reset_state', resetState);
+  };
 
   useEffect(() => {
-    // Fetch the list of available videos from the server
-    fetch('http://localhost:5000/videos-list')
+    socket.on('admin_logout', resetVideoState);
+    return () => socket.off('admin_logout');
+  }, []);
+
+  useEffect(() => {
+    socket.on('admin_logged_in', (data) => {
+      console.log('admin logged in:', data.phoneNo);
+      handleSelectVideo(videoList[0]); 
+    });
+
+    return () => {
+      socket.off('admin_logged_in');
+    };
+  }, []);
+  
+// Fetch the list of available videos from the server
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_BASE_URL}/videos-list`)
       .then((response) => response.json())
       .then((data) => setVideoList(data.videos))
       .catch((error) => console.error('Error fetching videos:', error));
   }, []);
 
-
-  // Emit the current video state every millisecond while playing
   useEffect(() => {
-    let interval = null;
-    if (currentState.isPlaying && videoRef.current) {
-      interval = setInterval(() => {
+    if (localStorage.getItem('token') && currentState.isPlaying && videoRef.current) {
+      const interval = setInterval(() => {
         const updatedState = {
           ...currentState,
           currentTime: videoRef.current.currentTime,
         };
         socket.emit('admin_control', updatedState);
-      }, 100); // Emit every millisecond
+      }, 100);
+      return () => clearInterval(interval);
     }
-    return () => clearInterval(interval);
   }, [currentState.isPlaying, currentState.url]);
 
-  const handleLogin = () => {
-    if (password === 'admin123') {
-      setIsAuthenticated(true);
-    } else {
-      alert('Incorrect password');
+
+  useEffect(() => {
+    const isAdminLoggedIn = localStorage.getItem('token');
+    
+    if (isAdminLoggedIn) {
+      // Fetch the current state from the server
+      socket.emit('fetch_current_state', {}, (state) => {
+        console.log('Fetched current state on login:', state);
+        setCurrentState(state);
+  
+        const videoElement = videoRef.current;
+  
+        // Ensure the video element and state URL are valid
+        if (videoElement) {
+          if (state.url) {
+            videoElement.src = state.url;
+            videoElement.currentTime = state.currentTime || 0;
+            videoElement.muted = state.isMuted || false;
+  
+            // Attempt to play the video if it's marked as playing
+            if (state.isPlaying) {
+              videoElement.play().catch((err) => {
+                console.error('Error playing video on login:', err);
+              });
+            }
+          } else {
+            console.warn('No video URL provided in state:', state);
+          }
+        } else {
+          console.error('Video element is not initialized.');
+        }
+      });
+    }
+  }, [socket]); 
+
+  const handleSelectVideo = async (video) => {
+    const isAdminLoggedIn = localStorage.getItem('token');
+    if (!isAdminLoggedIn) {
+      console.warn('Admin is logged out, video selection is disabled.');
+      return;
+    }
+    setStopLoop(false); 
+    const videoUrl = `${import.meta.env.VITE_BASE_URL}/videos/${video}`;
+    const updatedState = {
+      url: videoUrl,
+      currentTime: 0,
+      isPlaying: true, 
+      isMuted: isMuted, 
+      action: ['select', 'play'],
+    };
+    setSelectedVideo(videoUrl);
+    setCurrentState(updatedState);
+    socket.emit('admin_select_video', updatedState);
+  
+    // Ensure video element is ready to load and play
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.src = videoUrl;
+      videoRef.current.currentTime = 0; 
+      videoRef.current.muted = isMuted; 
+  
+      try {
+        // Load and play the video
+        videoRef.current.load(); 
+        await videoRef.current.play(); 
+        console.log('Video started playing successfully.');
+      } catch (error) {
+        console.error('Error starting video playback:', error);
+        videoRef.current.muted = true; 
+        try {
+          await videoRef.current.play();
+          console.log('Autoplay restriction resolved with muted playback.');
+        } catch (err) {
+          console.error('Autoplay retry failed:', err);
+        }
+      }
     }
   };
 
-  const handleSelectVideo = (video) => {
-    // Create the video URL from the selected video name
-    const videoUrl = `http://localhost:5000/videos/${video}`;
+  const handleCoinReach = async () => {
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/game/set-coin-reach`, {
+        coinReach,
+      });
+        socket.emit('setCoinReach', coinReach);
+        setCoinReach(response.data.coinReach);
+      console.log('Coin reach set successfully:', response.data);
+    } catch (error) {
+      console.error('Error setting coin reach:', error.message);
+    }
+  };  
+
   
-    // Prepare the updated state for the new video
-    const updatedState = {
-      url: videoUrl,
-      currentTime: 0, // Start from the beginning
-      isPlaying: true, // Start playing the video immediately
-      isMuted: isMuted, // Keep the current mute state
-      action: ['select', 'play'], // Indicate both actions being performed
-    };
-  
-    // Update the selected video and current state
-    setSelectedVideo(videoUrl);
-    setCurrentState(updatedState);
-  
-    // Emit the updated state to the server
-    socket.emit('admin_select_video', updatedState);
-  
-    // Handle the video element
-    if (videoRef.current) {
-      videoRef.current.pause(); // Pause any existing playback
-      videoRef.current.src = videoUrl; // Set the new video source
-      videoRef.current.currentTime = 0; // Start from the beginning
-      videoRef.current.muted = isMuted; // Ensure mute state matches
-  
-      // Force play after loading
-      videoRef.current.load(); // Load the video
-      videoRef.current
-        .play()
-        .then(() => {
-          console.log('Video started playing successfully.');
-        })
-        .catch((error) => {
-          console.error('Error playing video:', error);
-          // Handle autoplay restrictions
-          videoRef.current.muted = true;
-          videoRef.current.play().catch((err) => console.error('Autoplay retry failed:', err));
+  useEffect(() => {
+    if (selectedVideo ===  `${import.meta.env.VITE_BASE_URL}/videos/${videoList[1]}`) {
+      setShowOverlay(true);
+      setCurrentMultiplier(1);
+      const interval = setInterval(() => {
+        setCurrentMultiplier(prev => {
+          const newMultiplier = prev + parseFloat((Math.random() * 0.4 + 0.1).toFixed(1));
+          if (newMultiplier >= coinReach) {
+            clearInterval(interval);
+            setShowOverlay(false);
+            handleSelectVideo(videoList[2]);
+          }
+          return newMultiplier;
         });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedVideo, coinReach, videoList]);
+
+   // Automatically play the next video after the current one ends
+   const handleVideoEnd = () => {
+    if (stopLoop) return;
+    const currentIndex = videoList.indexOf(selectedVideo.split('/').pop()); 
+    if (currentIndex === 0 || currentIndex === 1) {
+      if (currentIndex < videoList.length - 1) {
+        const nextVideo = videoList[currentIndex + 1];
+        handleSelectVideo(nextVideo);
+      }
+    } else if (currentIndex === 2) {
+      handleSelectVideo(videoList[0]); 
     }
   };
-  
-  
+
+  // Stop the loop when the stop button is clicked
+  const handleStopLoop = () => {
+    setStopLoop(true);
+    if (videoRef.current) {
+      videoRef.current.pause(); 
+      videoRef.current.currentTime = 0; 
+      socket.emit('stop_video_loop');  
+    }
+  };
 
   const handlePlay = () => {
     videoRef.current.play();
@@ -103,83 +226,28 @@ const Admin = () => {
     socket.emit('play');
   };
 
-  const handlePause = () => {
-    videoRef.current.pause();
-    const updatedState = { ...currentState, isPlaying: false, action: 'pause', currentTime: videoRef.current.currentTime };
-    setCurrentState(updatedState);
-    socket.emit('pause');
-  };
-
-  const handleRestart = () => {
-    videoRef.current.currentTime = 0;
-    videoRef.current.play();
-    const updatedState = { ...currentState, isPlaying: true, action: 'restart', currentTime: 0 };
-    setCurrentState(updatedState);
-    socket.emit('restart');
-  };
-
-  const toggleMute = () => {
-    const muted = !isMuted;
-    setIsMuted(muted);
-    videoRef.current.muted = muted;
-    const updatedState = { ...currentState, isMuted: muted, action: 'mute' };
-    setCurrentState(updatedState);
-    socket.emit('admin_control', updatedState);
-  };
 
   return (
     <div className="shadow-lg hover:bg-[#021024] flex flex-col items-center min-h-screen justify-center bg-gray-900 text-white p-6">
-      {!isAuthenticated ? (
-      <div className='bg-gray-800 p-1'>
-         <div className='bg-gray-900 p-3 rounded-lg'>
-         <div className="bg-gray-800 p-10 rounded-lg">
-          <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
-          <div className="relative w-full mb-6">
-  {/* Input Field */}
-  <input
-    type="password"
-    placeholder=" "
-    value={password}
-    onChange={(e) => setPassword(e.target.value)}
-    className="peer w-full p-3 text-white bg-transparent border border-gray-400 rounded-lg focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition duration-150"
-    id="password"
-    required
-  />
-
-  {/* Label */}
-  <label
-    htmlFor="password"
-    className="absolute left-3 top-3 text-gray-400 text-sm transition-all duration-150 peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-[-8px] peer-focus:text-sm peer-focus:text-white bg-gray-800 px-1"
-  >
-    Enter Password
-  </label>
-</div>
-
-         <div className='flex flex-col items-center '> 
-         <button
-  onClick={handleLogin}
-  className="
-    px-9 py-2 rounded 
-    text-lg
-  text-black 
-  bg-cyan-500 
-  border border-cyan-500 
-  shadow-[0_0_5px_cyan,0_0_25px_cyan] 
-  transition-all duration-300 
-  hover:shadow-[0_0_5px_cyan,0_0_25px_cyan,0_0_50px_cyan,0_0_100px_cyan,0_0_200px_cyan]
-  "
-  disabled={false} // Set to true to test the disabled state
->
-  Login
-</button>
-
-         </div>
-        </div>
-       </div>
-      </div>
-      ) : (
         <>
+       <div className='absolute top-4 right-4'>
+       <button onClick={handleLogout} className="bg-cyan-600 text-white hover:bg-white hover:text-cyan-600 transform transition-transform hover:scale-95 font-bold px-4 py-1 rounded">
+            Logout
+          </button>
+       </div>
           <h1 className="text-3xl font-bold mb-6 text-center text-blue-400">Admin Controls</h1>
+          <div className="mb-4">
+        <label className="text-xl font-semibold mb-2 block">Set Coin Reach Value:</label>
+        <input
+          type="number"
+          value={coinReach}
+          onChange={(e) => setCoinReach(parseFloat(e.target.value))}
+          className="text-black px-2 py-1 rounded"
+        />
+        <button onClick={handleCoinReach} className="bg-blue-600 text-white px-4 py-2 rounded ml-2">
+          Set Value
+        </button>
+      </div>
           <div className="mb-4">
             <h2 className="text-xl font-semibold mb-2">Select a Video:</h2>
             <ul className="space-y-2">
@@ -201,41 +269,29 @@ const Admin = () => {
             </ul>
           </div>
           {selectedVideo && (
-           <video
-           ref={videoRef}
-           
-           muted={isMuted}
-           onPlay={() => setIsPlaying(true)}
-           onPause={() => setIsPlaying(false)}
-           onTimeUpdate={() =>
-             setCurrentState((prevState) => ({
-               ...prevState,
-               currentTime: videoRef.current.currentTime,
-             }))
-           }
-         />
+        <div className="relative">
+          <video
+            ref={videoRef}
+            src={selectedVideo}
+            onEnded={handleVideoEnd}
+            className="w-full"
+          />
+          {showOverlay && (
+            <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
+              <span className="text-white text-4xl">{currentMultiplier.toFixed(1)}x</span>
+            </div>
           )}
+        </div>
+      )}
           <div className="flex gap-4">
             <button onClick={handlePlay} className="bg-green-500 px-4 py-2 rounded hover:bg-green-600">
               Play
             </button>
-            <button onClick={handlePause} className="bg-yellow-500 px-4 py-2 rounded hover:bg-yellow-600">
-              Pause
-            </button>
-            <button onClick={handleRestart} className="bg-red-500 px-4 py-2 rounded hover:bg-red-600">
-              Restart
-            </button>
-            {/* <button
-              onClick={toggleMute}
-              className={`${
-                isMuted ? 'bg-gray-500' : 'bg-purple-500'
-              } px-4 py-2 rounded hover:bg-purple-600`}
-            >
-              {isMuted ? 'Unmute' : 'Mute'}
-            </button> */}
+            <button onClick={handleStopLoop} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+          Stop Game
+        </button>
           </div>
         </>
-      )}
     </div>
   );
 };

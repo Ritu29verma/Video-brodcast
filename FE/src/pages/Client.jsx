@@ -1,15 +1,85 @@
 import React, { useEffect, useRef, useState } from 'react';
-import io from 'socket.io-client';
-
-const socket = io('http://localhost:5000');
+import socket from "../components/socket";
 
 const Client = () => {
   const videoRef = useRef(null);
   const [videoUrl, setVideoUrl] = useState(null);
   const [hasInteracted, setHasInteracted] = useState(false); // Track user interaction
-  const [adminState, setAdminState] = useState(null); // Track the admin's video state
+  const [adminState, setAdminState] = useState({
+    url: null,
+    currentTime: 0,
+    isMuted: false,
+    isPlaying: false
+  }); // Track the admin's video state
   const [videoState, setVideoState] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+   const [videoList, setVideoList] = useState([]);
+  
+  useEffect(() => {
+    // Handle admin_logout event
+    socket.on('admin_logout', () => {
+      console.log('Admin has logged out, resetting video state');
+      
+      // Reset the video state
+      setVideoUrl(null);
+      setIsPlaying(false);
+      setAdminState({
+        url: null,
+        currentTime: 0,
+        isMuted: false,
+        isPlaying: false,
+        action: []
+      });
+  
+      const videoElement = videoRef.current;
+      if (videoElement) {
+        videoElement.pause();
+        videoElement.src = '';
+        videoElement.currentTime = 0;
+      }
+    });
+  
+    return () => {
+      socket.off('admin_logout');
+    };
+  }, []);
 
+  useEffect(() => {
+    socket.on('stop_video_loop', () => {
+      if (videoRef.current) {
+        const videoElement = videoRef.current;
+        videoElement.pause();
+        videoElement.src = ''; // Clear the video source to stop it
+        videoElement.currentTime = 0; // Reset the video time
+      }
+    });
+    return () => {
+      socket.off('stop_video_loop');
+    };
+  }, []);
+  
+  useEffect(() => {
+    socket.on('admin_reset_state', (resetState) => {
+      console.log('Received reset state from admin:', resetState);
+  
+      // Reset the video state on client-side
+      setVideoState(resetState);
+      setIsPlaying(resetState.isPlaying);
+      setAdminState(resetState);
+  
+      const videoElement = videoRef.current;
+      if (videoElement) {
+        videoElement.pause();
+        videoElement.src = '';
+        videoElement.currentTime = 0;
+      }
+    });
+  
+    return () => {
+      socket.off('admin_reset_state');
+    };
+  }, []);
+  
   // Listen for real-time updates from the admin
   useEffect(() => {
     socket.on('admin_control', (state) => {
@@ -19,7 +89,7 @@ const Client = () => {
       if (videoElement && state.url) {
         if (videoElement.src !== state.url) {
           videoElement.src = state.url;
-          videoElement.currentTime = 0;
+          videoElement.currentTime = state.currentTime || 0;
           videoElement.load();
   
           videoElement.onloadeddata = () => {
@@ -37,8 +107,8 @@ const Client = () => {
         }
         videoElement.muted = state.isMuted;
       }
-    });
-  
+  });
+
     return () => socket.off('admin_control');
   }, []);  
 
@@ -75,7 +145,7 @@ const Client = () => {
       setHasInteracted(true);
 
       // Request the latest admin state upon interaction
-      socket.emit('fetch_current_state', {}, (state) => {
+      socket.emit('fetch_current_state', {} , (state) => {
         console.log('Fetched current state from admin:', state);
         setAdminState(state);
 
@@ -90,6 +160,8 @@ const Client = () => {
             videoElement
               .play()
               .catch((err) => console.error('Playback error on interaction:', err));
+          } else {
+            videoElement.pause();
           }
         }
       });
@@ -189,20 +261,6 @@ const Client = () => {
       }
     });
 
-    socket.on('mute', () => {
-      const videoElement = videoRef.current;
-      if (videoElement) {
-        videoElement.muted = true;
-      }
-    });
-
-    socket.on('unmute', () => {
-      const videoElement = videoRef.current;
-      if (videoElement) {
-        videoElement.muted = false;
-      }
-    });
-
     socket.on('restart', () => {
       const videoElement = videoRef.current;
       if (videoElement) {
@@ -220,8 +278,6 @@ const Client = () => {
       socket.off('start_stream');
       socket.off('play');
       socket.off('pause');
-      socket.off('mute');
-      socket.off('unmute');
       socket.off('restart');
       window.removeEventListener('click', handleUserInteraction);
       window.removeEventListener('keydown', handleUserInteraction);

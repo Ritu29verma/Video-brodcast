@@ -1,142 +1,72 @@
 const express = require('express');
 const http = require('http');
-const socketIo = require('socket.io');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const bodyParser = require('body-parser');
+const dotenv = require('dotenv');
+const socketHandler = require('./socket');
+const connectMySQL = require('./config/mysql'); 
+const adminRoutes = require('./routes/adminroutes');
+const userRoutes = require('./routes/clientroutes');
+const gameRoutes = require('./routes/gameroutes');
+const sequelize = require('./models/sequelize');
 
-const app = express();
-const server = http.createServer(app);
+dotenv.config();
 
-// Setup Socket.IO with CORS
-const io = socketIo(server, {
-  cors: {
-    origin: 'http://localhost:5173', // Frontend origin
-    methods: ['GET', 'POST'],
-    credentials: true,
-  },
-});
+const PORT = process.env.PORT || 5000;
 
-// Use CORS for REST API endpoints
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+// Sync models
+sequelize.sync()
+  .then(() => console.log('Models synced...'))
+  .catch(err => console.log('Error: ' + err));
 
-// Static route to serve videos from the "videos" folder
-const videosDir = path.join(__dirname, 'videos');
-if (!fs.existsSync(videosDir)) fs.mkdirSync(videosDir);
-app.use('/videos', express.static(videosDir));
+// Wrapping MySQL connection in an async function to avoid top-level await
+const initializeApp = async () => {
+  const mysqlPool = await connectMySQL();
+  const app = express();
+  const server = http.createServer(app);
 
-// Endpoint to list all videos in the "videos" folder
-app.get('/videos-list', (req, res) => {
-  fs.readdir(videosDir, (err, files) => {
-    if (err) {
-      console.error('Error reading videos directory:', err);
-      return res.status(500).json({ error: 'Unable to list videos' });
+  // Middleware setup
+  app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+  app.use(bodyParser.json());
+  app.use(express.json());
+  app.use(bodyParser.urlencoded({ extended: true }));
+
+  // Attach MySQL pool to requests
+  app.use((req, res, next) => {
+    if (!mysqlPool) {
+      return res.status(500).json({ error: 'MySQL pool not initialized' });
     }
-    const videoFiles = files.filter((file) => /\.(mp4|mov|avi|mkv)$/i.test(file));
-    res.status(200).json({ videos: videoFiles });
+    req.mysqlPool = mysqlPool;
+    next();
   });
-});
 
-// Video state (to sync admin and clients)
-let videoState = {
-  url: null,
-  isPlaying: false,
-  currentTime: 0,
-  isMuted: false
+  const videosDir = path.join(__dirname, 'videos');
+  if (!fs.existsSync(videosDir)) fs.mkdirSync(videosDir);
+  app.use('/videos', express.static(videosDir));
+
+
+  app.get('/videos-list', (req, res) => {
+    fs.readdir(videosDir, (err, files) => {
+      if (err) {
+        console.error('Error reading videos directory:', err);
+        return res.status(500).json({ error: 'Unable to list videos' });
+      }
+      const videoFiles = files.filter((file) => /\.(mp4|mov|avi|mkv)$/i.test(file));
+      res.status(200).json({ videos: videoFiles });
+    });
+  });
+
+  app.use('/api/admin', adminRoutes);
+  app.use('/api/client', userRoutes);
+  app.use('/api/game', gameRoutes);
+  socketHandler(server);
+  server.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
 };
 
-let currentVideoUrl = '';  // Track the current video URL
-let currentTime = 0;       // Track the current time of the video
-let isPlaying = false;     // Track whether the video is playing or paused
-let isMuted = false;       // Track the mute state
-
-// Socket.IO events
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
-    // Listen for the admin selecting a new video
-    socket.on('admin_select_video', (state) => {
-      if (!state || !state.url) {
-        console.error('Invalid state received from admin_select_video:', state);
-        return;
-      }
-    
-      console.log('Admin selected video:', state.url);
-    
-      // Update the video state
-      videoState = {
-        ...videoState,
-        url: state.url,
-        currentTime: 0,
-        isPlaying: true,
-        isMuted: state.isMuted,
-      };
-    
-      // Broadcast the updated state to all connected clients
-      io.emit('admin_control', videoState);
-    });
-    
-
-      // Handle video change
-  socket.on('video_change', (state) => {
-    currentVideoState = { ...state, currentTime: 0 }; // Reset time for new video
-    console.log('Admin changed video:', currentVideoState.url);
-    io.emit('video_change', currentVideoState); // Broadcast to all clients
-  });
-
-  socket.on('play', () => {
-    console.log('Play command received');
-    isPlaying = true;
-    io.emit('play'); // Broadcast play to all clients
-  });
-
-  socket.on('pause', () => {
-    console.log('Pause command received');
-    io.emit('pause'); // Broadcast pause to all clients
-  });
-
-  socket.on('mute', () => {
-    console.log('Mute command received');
-    io.emit('mute'); // Broadcast mute to all clients
-  });
-
-  socket.on('unmute', () => {
-    console.log('Unmute command received');
-    io.emit('unmute'); // Broadcast unmute to all clients
-  });
-
-  socket.on('restart', () => {
-    console.log('Restart command received');
-    io.emit('restart'); // Broadcast restart to all clients
-  });
-
-  // Send the current video state to new clients
-  socket.emit('start_stream', videoState);
-
-  // Listen to admin commands
-  socket.on('admin_control', (state) => {
-    videoState = { ...videoState, ...state };
-
-    
-
-    // Broadcast updated state to all clients
-    io.emit('client_control', videoState);
-  });
-
-  // Handle fetch_current_state event
-socket.on('fetch_current_state', (data, callback) => {
-  console.log('Client requested current state');
-  callback(videoState); // Send the current video state to the client
-});
-
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-}); 
-
-// Start the server
-const PORT = 5000;
-server.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+initializeApp().catch((err) => {
+  console.error('Error initializing application:', err);
 });
