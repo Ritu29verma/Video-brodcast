@@ -22,8 +22,8 @@ const UserWallet = sequelize.define('UserWallet', {
     onUpdate: DataTypes.NOW,
   },
 }, {
-  timestamps: true, // Enables automatic createdAt and updatedAt fields
-  tableName: 'user_wallets',
+  timestamps: true,
+  tableName: 'user_wallets_avi',
 });
 
 module.exports = UserWallet;

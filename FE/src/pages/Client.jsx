@@ -13,7 +13,10 @@ const Client = () => {
   }); // Track the admin's video state
   const [videoState, setVideoState] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-   const [videoList, setVideoList] = useState([]);
+  const [videoList, setVideoList] = useState([]);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [currentMultiplier, setCurrentMultiplier] = useState(1);
+  const [coinReach, setCoinReach] = useState(0);
   
   useEffect(() => {
     // Handle admin_logout event
@@ -110,22 +113,69 @@ const Client = () => {
   });
 
     return () => socket.off('admin_control');
-  }, []);  
+  }, []); 
+  
+    useEffect(() => {
+      fetch(`${import.meta.env.VITE_BASE_URL}/videos-list`)
+        .then((response) => response.json())
+        .then((data) => setVideoList(data.videos))
+        .catch((error) => console.error('Error fetching videos:', error));
+    }, []);
 
- // Listen for real-time updates from the admin
+    useEffect(() => {
+      socket.on('show_overlay', () => {
+        console.log('Overlay should be shown');
+        setShowOverlay(true);
+        setCurrentMultiplier(1); // Reset multiplier on overlay show
+      });
+    
+      socket.on('hide_overlay', () => {
+        console.log('Overlay should be hidden');
+        setShowOverlay(false);
+      });
+    
+      return () => {
+        socket.off('show_overlay');
+        socket.off('hide_overlay');
+      };
+    }, []);
+
+    useEffect(() => {
+      socket.on('set_coin_reach', (value) => {
+        setCoinReach(value); // Update coinReach value when admin sets it
+      });
+    
+      return () => {
+        socket.off('set_coin_reach');
+      };
+    }, []);
+    
+    useEffect(() => {
+      socket.on('update_multiplier', (newMultiplier) => {
+        setCurrentMultiplier(newMultiplier);
+      });
+    
+      return () => {
+        socket.off('update_multiplier');
+      };
+    }, []);
+    
+    
+  
+//  Listen for real-time updates from the admin
  useEffect(() => {
-  // When admin selects a new video, broadcast the URL to all clients
   socket.on('video_change', (state) => {
     console.log('Received video switch from admin:', state);
-    setVideoUrl(state.url);
+    console.log('Current video list:', videoList);
+    console.log('State URL:', state.url);
 
+    setVideoUrl(state.url);
     const videoElement = videoRef.current;
     if (videoElement) {
       videoElement.src = state.url;
       videoElement.currentTime = state.currentTime || 0;
       videoElement.muted = state.isMuted || false;
 
-      // If the video should play, start it
       if (state.isPlaying) {
         videoElement.play().catch((err) => console.error('Error playing video:', err));
       } else {
@@ -137,7 +187,8 @@ const Client = () => {
   return () => {
     socket.off('video_change');
   };
-}, []);
+}, [videoList]);
+
 
   // Handle user interaction and fetch the latest admin state
   const handleUserInteraction = () => {
@@ -309,6 +360,11 @@ const Client = () => {
           autoPlay
           muted
         />
+         {showOverlay && (
+            <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
+              <span className="text-white pt-16 text-4xl">{currentMultiplier.toFixed(1)}x</span>
+            </div>
+          )}
       </div>
     )}
   </div>

@@ -9,7 +9,7 @@ const Admin = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
   const videoRef = useRef(null);
-  const [coinReach, setCoinReach] = useState(0); 
+  const [coinReach, setCoinReach] = useState(null); 
   const [currentMultiplier, setCurrentMultiplier] = useState(0);
   const [showOverlay, setShowOverlay] = useState(false);
   const [isVideoPrepared, setIsVideoPrepared] = useState(false);
@@ -22,6 +22,8 @@ const Admin = () => {
   });
   const navigate = useNavigate();
   const [stopLoop, setStopLoop] = useState(false);
+  const [isCoinReachSet, setIsCoinReachSet] = useState(false);
+
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -86,7 +88,6 @@ const Admin = () => {
 
   useEffect(() => {
     const isAdminLoggedIn = localStorage.getItem('token');
-    
     if (isAdminLoggedIn) {
       // Fetch the current state from the server
       socket.emit('fetch_current_state', {}, (state) => {
@@ -160,32 +161,52 @@ const Admin = () => {
         }
       }
     }
+
+     videoRef.current.onended = () => {
+      console.log('Video ended.');
+      if (video === videoList[2]) {
+        console.log('Third video ended. Resetting coinReach to 0 (only in FE).');
+        setCoinReach(0); // Reset coinReach only in the front-end
+      }
+    };
+
+    if (video === videoList[2] && !isCoinReachSet) {
+        axios.post(`${import.meta.env.VITE_BASE_URL}/api/game/set-coin-reach`, {
+          coinReach: currentMultiplier,
+        })
+        .then(response => {
+          console.log('Stored currentMultiplier as coinReach:', response.data);
+          setCoinReach(currentMultiplier);
+        })
+        .catch(error => {
+          console.error('Error storing coin reach:', error.message);
+        });
+      }
+      // Emit video change event
+      socket.emit('video_change', { url: `${import.meta.env.VITE_BASE_URL}/videos/${video}`, isPlaying: true });
+      setSelectedVideo(`${import.meta.env.VITE_BASE_URL}/videos/${video}`);
+    
   };
-
-  const handleCoinReach = async () => {
-    try {
-      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/game/set-coin-reach`, {
-        coinReach,
-      });
-        socket.emit('setCoinReach', coinReach);
-        setCoinReach(response.data.coinReach);
-      console.log('Coin reach set successfully:', response.data);
-    } catch (error) {
-      console.error('Error setting coin reach:', error.message);
-    }
-  };  
-
   
   useEffect(() => {
+    if (selectedVideo ===  `${import.meta.env.VITE_BASE_URL}/videos/${videoList[0]}`) {
+      setShowOverlay(false);
+      socket.emit('hide_overlay'); }
+      if (selectedVideo ===  `${import.meta.env.VITE_BASE_URL}/videos/${videoList[2]}`) {
+        setShowOverlay(false);
+        socket.emit('hide_overlay'); }
     if (selectedVideo ===  `${import.meta.env.VITE_BASE_URL}/videos/${videoList[1]}`) {
       setShowOverlay(true);
+      socket.emit('show_overlay'); 
       setCurrentMultiplier(1);
       const interval = setInterval(() => {
         setCurrentMultiplier(prev => {
           const newMultiplier = prev + parseFloat((Math.random() * 0.4 + 0.1).toFixed(1));
-          if (newMultiplier >= coinReach) {
+          socket.emit('update_multiplier', newMultiplier);
+          if (coinReach !== null && newMultiplier >= coinReach) {
             clearInterval(interval);
             setShowOverlay(false);
+            socket.emit('hide_overlay');
             handleSelectVideo(videoList[2]);
           }
           return newMultiplier;
@@ -194,6 +215,25 @@ const Admin = () => {
       return () => clearInterval(interval);
     }
   }, [selectedVideo, coinReach, videoList]);
+
+  const handleCoinReach = async () => {
+    try {
+      if (coinReach === null) {
+        // If coinReach is not set, save it in the database
+        const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/game/set-coin-reach`, {
+          coinReach: currentMultiplier,
+        });
+        console.log('CoinReach stored:', response.data);
+        setCoinReach(currentMultiplier); // Set coinReach after saving to DB
+        handleSelectVideo(videoList[2]); // Proceed to third video immediately
+      } else {
+        // If coinReach is set, just navigate to third video
+        handleSelectVideo(videoList[2]);
+      }
+    } catch (error) {
+      console.error('Error setting coinReach:', error.message);
+    }
+  };
 
    // Automatically play the next video after the current one ends
    const handleVideoEnd = () => {
@@ -241,10 +281,11 @@ const Admin = () => {
         <input
           type="number"
           value={coinReach}
-          onChange={(e) => setCoinReach(parseFloat(e.target.value))}
+          onChange={(e) => setCoinReach(parseFloat(e.target.value)) || 0}
           className="text-black px-2 py-1 rounded"
         />
-        <button onClick={handleCoinReach} className="bg-blue-600 text-white px-4 py-2 rounded ml-2">
+        <button onClick={handleCoinReach} className="bg-blue-600 text-white px-4 py-2 rounded ml-2"
+        disabled={isNaN(coinReach) || coinReach <= 0}>
           Set Value
         </button>
       </div>

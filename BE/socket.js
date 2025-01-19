@@ -7,6 +7,8 @@ let videoState = {
   isMuted: false,
 };
 
+let io; 
+
 module.exports = (server) => {
   const io = socketIo(server, {
     cors: {
@@ -59,6 +61,18 @@ module.exports = (server) => {
     socket.on('stop_video_loop', () => {
       console.log('Stop video loop event received from admin');
       io.emit('stop_video_loop');
+    });
+
+    socket.on('show_overlay', () => {
+      io.emit('show_overlay'); // Broadcast to all clients
+    });
+  
+    socket.on('hide_overlay', () => {
+      io.emit('hide_overlay'); // Broadcast to all clients
+    });
+
+    socket.on('update_multiplier', (multiplier) => {
+      io.emit('update_multiplier', multiplier); // Broadcast the multiplier to all clients
     });
 
     socket.on('play', () => {
@@ -126,4 +140,7 @@ socket.on('fetch_current_state', (callback) => {
       console.log('User disconnected:', socket.id);
     });
   });
+  return io;
 };
+
+module.exports.getIo = () => io;

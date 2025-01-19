@@ -25,15 +25,6 @@ const Client = sequelize.define('Client', {
     allowNull: false,
     defaultValue: 'customer', 
   },
-  createdAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  },
-  updatedAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-    onUpdate: DataTypes.NOW,
-  },
 }, {
   timestamps: false, 
   tableName: 'clients', 

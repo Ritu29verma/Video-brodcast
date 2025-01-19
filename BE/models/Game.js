@@ -3,9 +3,9 @@ const sequelize = require('./sequelize');
 
 const Game = sequelize.define('Game', {
   gameId: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.INTEGER,
     primaryKey: true,
+    autoIncrement: true,
   },
   coinReach: {
     type: DataTypes.DECIMAL(10, 2),

@@ -23,7 +23,7 @@ const Login = () => {
 
   const handlePasswordChange = (value) => {
     setPassword(value);
-    setError('');  // Clear previous error when user starts typing
+    setError(''); 
   };
 
   const handleSubmit = async () => {

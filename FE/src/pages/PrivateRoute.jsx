@@ -9,18 +9,15 @@ const PrivateRoute = ({ children }) => {
     const role = localStorage.getItem("role");
 
     if (!role) {
-      // Redirect to login if no role found
       navigate("/login");
       return;
     }
-
-    // Redirect based on role
     if (role === "client") {
-      navigate("/homepage");  // Redirect to client homepage
+      navigate("/homepage");  
     } else if (role === "admin") {
-      navigate("/admin");  // Redirect to admin page
+      navigate("/admin");  
     } else {
-      navigate("/unauthorized");  // Redirect to unauthorized page if role is not recognized
+      navigate("/unauthorized");
     }
 
     setLoading(false);
