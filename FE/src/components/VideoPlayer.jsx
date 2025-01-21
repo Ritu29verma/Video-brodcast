@@ -4,7 +4,7 @@ import socket from "../components/socket";
 const Client = () => {
   const videoRef = useRef(null);
   const [videoUrl, setVideoUrl] = useState(null);
-  const [hasInteracted, setHasInteracted] = useState(false); // Track user interaction
+  const [hasInteracted, setHasInteracted] = useState(false); 
   const [adminState, setAdminState] = useState({
     url: null,
     currentTime: 0,
@@ -308,7 +308,7 @@ useEffect(() => {
   }, [videoUrl, hasInteracted]);
 
   return (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex flex-col items-center w-full ">
     <video
       ref={videoRef}
       controls={false}

@@ -3,6 +3,6 @@ node_modules
 dist
 dist-ssr
 *.local
-videos
-videos/my-video.mp4
-videos/my-video2.mp4
+# videos
+# videos/my-video.mp4
+# videos/my-video2.mp4

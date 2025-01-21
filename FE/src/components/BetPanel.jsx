@@ -1,156 +1,117 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
-const BetButton = ({ walletAmount, setWalletAmount, videoState, videoNumber }) => {
-  const [betAmount, setBetAmount] = useState(1); // Default bet amount
-  const [buttonState, setButtonState] = useState("place"); // place, cashout, cancel
-  const [multiplier, setMultiplier] = useState(1); // Multiplier for winnings
-  const [betLocked, setBetLocked] = useState(false); // Indicates if betting is allowed
+const BetButton = ({ walletAmount, setWalletAmount }) => {
+  const [betAmount, setBetAmount] = useState(10);
+  const [activeTab, setActiveTab] = useState("bet"); // "bet" or "auto"
+  const betOptions = [1, 2, 5, 10];
 
-  useEffect(() => {
-    // Disable betting when the second video starts playing
-    if (videoState.isPlaying && videoNumber === 2) {
-      setBetLocked(true);
-    } else {
-      setBetLocked(false);
-    }
-
-    // Reset the button state when the third video starts playing
-    if (videoState.isPlaying && videoNumber === 3) {
-      if (buttonState === "cashout") {
-        setButtonState("place");
-        alert("You missed the cashout! Bet lost.");
-      }
-    }
-  }, [videoState, videoNumber]);
+  const handleBetChange = (change) => {
+    const newBet = betAmount + change;
+    if (newBet >= 1) setBetAmount(newBet);
+  };
 
   const handlePlaceBet = () => {
     if (walletAmount >= betAmount) {
       setWalletAmount(walletAmount - betAmount);
-      setButtonState("cashout");
+      alert(`Bet placed: $${betAmount}`);
     } else {
       alert("Insufficient balance!");
     }
   };
 
-  const handleCashout = () => {
-    const winnings = betAmount * multiplier;
-    setWalletAmount(walletAmount + winnings);
-    setButtonState("place");
-    alert(`You cashed out and won ${winnings.toFixed(2)}!`);
-  };
-
-  const handleCancel = () => {
-    if (!videoState.isPlaying || videoNumber !== 2) {
-      setWalletAmount(walletAmount + betAmount);
-      setButtonState("place");
-      alert("Bet canceled.");
-    }
-  };
-
-  const getButtonStyles = () => {
-    switch (buttonState) {
-      case "place":
-        return "bg-green-500 text-white";
-      case "cashout":
-        return "bg-yellow-500 text-white";
-      case "cancel":
-        return "bg-red-500 text-white";
-      default:
-        return "";
-    }
-  };
-
   return (
-    <div className="flex flex-col items-center">
-      <div className="flex space-x-2">
-        {/* Bet Button */}
+    <div className="bg-gray-800 text-white rounded-lg shadow-lg p-3 w-full mx-auto">
+      {/* Tabs */}
+      <div className="flex items-center justify-between mb-2 bg-gray-900 rounded-xl">
         <button
-          className={`p-4 rounded-lg shadow-lg w-40 ${getButtonStyles()}`}
-          onClick={() => {
-            if (buttonState === "place") {
-              handlePlaceBet();
-            } else if (buttonState === "cashout") {
-              handleCashout();
-            }
-          }}
-          disabled={betLocked && buttonState === "place"}
+          className={`flex-1 py-2 text-center font-semibold rounded-tl-xl rounded-bl-xl ${
+            activeTab === "bet"
+              ? "bg-gray-700 text-white"
+              : "bg-gray-900 text-gray-400"
+          }`}
+          onClick={() => setActiveTab("bet")}
         >
-          {buttonState === "place"
-            ? `BET ${betAmount.toFixed(2)} USD`
-            : buttonState === "cashout"
-            ? `CASH OUT ${betAmount * multiplier} USD`
-            : "PLACE BET"}
+          Bet
         </button>
-
-        {/* Cancel Button */}
-        {buttonState === "cashout" && (
-          <button
-            className="p-4 rounded-lg shadow-lg bg-red-500 text-white w-40"
-            onClick={handleCancel}
-          >
-            CANCEL
-          </button>
-        )}
+        <button
+          className={`flex-1 py-2 text-center font-semibold rounded-tr-xl rounded-br-xl ${
+            activeTab === "auto"
+              ? "bg-gray-700 text-white"
+              : "bg-gray-900 text-gray-400"
+          }`}
+          onClick={() => setActiveTab("auto")}
+        >
+          Auto
+        </button>
       </div>
 
-      {/* Bet Amount Selector */}
-      <div className="mt-4 space-x-2">
-        {[1, 2, 5, 10].map((amount) => (
+
+     <div className="flex space-x-2">
+
+     <div>
+        {/* Bet Adjustment Section */}
+        <div className="flex items-center bg-black p-2 rounded-full justify-between mb-1">
+        <button
+          className="w-6 h-6 bg-gray-700 text-white rounded-full flex items-center justify-center hover:bg-gray-600"
+          onClick={() => handleBetChange(-1)}
+        >
+          -
+        </button>
+        <span className="ml-2 mr-2 text-xl font-bold">{betAmount.toFixed(2)}</span>
+        <button
+          className="w-6 h-6 bg-gray-700 text-white rounded-full flex items-center justify-center hover:bg-gray-600"
+          onClick={() => handleBetChange(1)}
+        >
+          +
+        </button>
+      </div>
+      
+       {/* Bet Options */}
+       <div className="grid grid-cols-2 gap-2">
+        {betOptions.map((option) => (
           <button
-            key={amount}
-            className={`p-2 rounded-lg border ${
-              betAmount === amount ? "bg-blue-500 text-white" : "bg-gray-800 text-gray-200"
-            }`}
-            onClick={() => setBetAmount(amount)}
+            key={option}
+            className={`py-1 px-2 rounded-lg font-medium ${
+              betAmount === option
+                ? "bg-blue-500 text-white"
+                : "bg-gray-700 text-gray-300"
+            } hover:bg-blue-400`}
+            onClick={() => setBetAmount(option)}
           >
-            {amount} USD
+            {option.toFixed(2)}
           </button>
         ))}
       </div>
+     </div>
+
+      {/* Place Bet Button */}
+      <button
+        className="w-full py-3 bg-green-500 text-white font-bold text-lg rounded-lg hover:bg-green-600"
+        onClick={handlePlaceBet}
+      >
+      <div className="flex flex-col">
+      <span> BET</span>
+      <span> ${betAmount.toFixed(2)} USD</span>
+      </div>
+      </button>
+     </div>
     </div>
   );
 };
 
 const BettingGame = () => {
-  const [walletAmount, setWalletAmount] = useState(1000); // Initial wallet balance
-  const [videoState, setVideoState] = useState({ isPlaying: false }); // Video state
-  const [videoNumber, setVideoNumber] = useState(1); // Current video number
-
-  // Simulate video state changes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setVideoNumber((prev) => (prev === 3 ? 1 : prev + 1));
-      setVideoState({ isPlaying: Math.random() > 0.5 }); // Randomly simulate play/pause
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
+  const [walletAmount, setWalletAmount] = useState(100);
 
   return (
-    <div className=" bg-gray-900 text-white p-4">
-      <h1 className="text-3xl font-bold text-center mb-6">Betting Game</h1>
-      <div className="text-center mb-6">
-        <p>Wallet: ${walletAmount.toFixed(2)}</p>
-        <p>Current Video: {videoNumber}</p>
-        <p>Video Playing: {videoState.isPlaying ? "Yes" : "No"}</p>
-      </div>
-
-      {/* Two Betting Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <BetButton
-          walletAmount={walletAmount}
-          setWalletAmount={setWalletAmount}
-          videoState={videoState}
-          videoNumber={videoNumber}
-        />
-        <BetButton
-          walletAmount={walletAmount}
-          setWalletAmount={setWalletAmount}
-          videoState={videoState}
-          videoNumber={videoNumber}
-        />
-      </div>
+    <div className="flex flex-col md:flex-row">
+    <div className="bg-gray-900 text-white flex flex-col items-center p-6 w-full">
+      <BetButton walletAmount={walletAmount} setWalletAmount={setWalletAmount} />
     </div>
+    <div className="bg-gray-900 text-white flex flex-col items-center p-6 w-full">
+      <BetButton walletAmount={walletAmount} setWalletAmount={setWalletAmount} />
+    </div>
+  </div>
+  
   );
 };
 

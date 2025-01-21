@@ -2,20 +2,13 @@ import React from 'react';
 
 const Navbar = ({ userId = 'Guest', walletAmount = 0 }) => {
   return (
-    <nav className="bg-black p-4 w-full flex justify-between items-center text-white">
+    <nav className="bg-black p-1.5 w-full flex justify-between items-center text-white">
       {/* Left Section */}
       <div className="flex space-x-2 items-center w-full max-w-6xl">
         <h1 className="text-red-500 font-bold text-2xl">Aviator</h1>
         <button className="text-yellow-400 bg-gray-800 px-3 py-1 rounded-md hover:bg-gray-700">
           How to play?
         </button>
-      </div> 
-
-      {/* Center Links */}
-      <div className="flex items-center space-x-4">
-        <a href="#" className="hover:text-yellow-500">FreeBets</a>
-        <a href="#" className="hover:text-yellow-500">MyBetHistory</a>
-        <a href="#" className="hover:text-yellow-500">GameLimits</a>
       </div>
 
       {/* Right Section */}
