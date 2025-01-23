@@ -16,7 +16,7 @@ const [hasInteracted, setHasInteracted] = useState(false);
     isPlaying: false,
     currentTime: 0,
     isMuted: false,
-    action: null,
+    action: null,    
   });
   const navigate = useNavigate();
   const [stopLoop, setStopLoop] = useState(false);
@@ -97,18 +97,40 @@ const [hasInteracted, setHasInteracted] = useState(false);
     };
   }, []);
 
+  // useEffect(() => {
+  //   if (localStorage.getItem('token') && currentState.isPlaying && videoRef.current) {
+  //     const interval = setInterval(() => {
+  //       const updatedState = {
+  //         ...currentState,
+  //         currentTime: videoRef.current.currentTime,
+  //       };
+  //       socket.emit('admin_control', updatedState);
+  //     }, 100);
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [currentState.isPlaying, currentState.url]);
+
   useEffect(() => {
+    // Check if admin is logged in and a video is playing
     if (localStorage.getItem('token') && currentState.isPlaying && videoRef.current) {
       const interval = setInterval(() => {
+        // Prepare the updated state
         const updatedState = {
-          ...currentState,
+          url: currentState.url,
           currentTime: videoRef.current.currentTime,
+          isPlaying: !videoRef.current.paused,
+          isMuted: videoRef.current.muted || false,
         };
+  
+        // Emit the updated state to all connected clients
         socket.emit('admin_control', updatedState);
-      }, 100);
+      }, 100); // Emits every 100ms (can be adjusted as per requirements)
+  
+      // Cleanup the interval on component unmount
       return () => clearInterval(interval);
     }
   }, [currentState.isPlaying, currentState.url]);
+  
 
 
   useEffect(() => {
@@ -240,6 +262,23 @@ const [hasInteracted, setHasInteracted] = useState(false);
       return () => clearInterval(interval);
     }
   }, [selectedVideo, coinReach, videoList]);
+
+  useEffect(() => {
+    socket.on('request_video_state', () => {
+      if (videoRef.current) {
+        const currentVideoState = {
+          url: videoRef.current.src,
+          currentTime: videoRef.current.currentTime,
+        };
+        socket.emit('admin_video_state', currentVideoState); // Emit state to the backend
+      }
+    });
+  
+    return () => {
+      socket.off('request_video_state'); // Clean up event listener
+    };
+  }, []);
+  
 
   const handleCoinReach = async () => {
     try {

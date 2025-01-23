@@ -64,15 +64,15 @@ module.exports = (server) => {
     });
 
     socket.on('show_overlay', () => {
-      io.emit('show_overlay'); // Broadcast to all clients
+      io.emit('show_overlay'); 
     });
   
     socket.on('hide_overlay', () => {
-      io.emit('hide_overlay'); // Broadcast to all clients
+      io.emit('hide_overlay'); 
     });
 
     socket.on('update_multiplier', (multiplier) => {
-      io.emit('update_multiplier', multiplier); // Broadcast the multiplier to all clients
+      io.emit('update_multiplier', multiplier); 
     });
 
     socket.on('play', () => {
@@ -103,10 +103,27 @@ module.exports = (server) => {
 
     socket.emit('start_stream', videoState);
 
-    socket.on('admin_control', (state) => {
-      videoState = { ...videoState, ...state };
-      io.emit('client_control', videoState);
+     // Admin updates the video state
+  socket.on('admin_control', (state) => {
+    currentVideoState = state; // Update the state globally
+    console.log('Admin updated video state:', state);
+
+    // Broadcast the updated state to all connected clients
+    socket.broadcast.emit('admin_control', state);
+  });
+
+    // socket.on('admin_control', (state) => {
+    //   videoState = { ...videoState, ...state };
+    //   io.emit('client_control', videoState);
+    // });
+
+    socket.on('admin_video_state', (videoState) => {
+      console.log('Admin sent video state:', videoState);
+  
+      // Send the state to the new client only
+      socket.emit('video_state_update', videoState);
     });
+    
 
 socket.on('admin_login', () => {
   console.log('Admin has logged in.');

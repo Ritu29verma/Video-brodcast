@@ -83,6 +83,7 @@ const Client = () => {
   // Listen for real-time updates from the admin
   useEffect(() => {
     socket.on('admin_control', (state) => {
+      console.log('Real-time state update from admin:', state);
       setVideoState(state);
   
       const videoElement = videoRef.current;
@@ -96,7 +97,6 @@ const Client = () => {
             if (state.isPlaying) {
               videoElement
                 .play()
-                .then(() => console.log('Client video started playing'))
                 .catch((err) => console.error('Error playing video:', err));
             }
           };
@@ -105,19 +105,15 @@ const Client = () => {
         } else {
           videoElement.pause();
         }
-        videoElement.muted = state.isMuted;
-      }
-  });
-
-    return () => socket.off('admin_control');
-  }, []); 
   
-    useEffect(() => {
-      fetch(`${import.meta.env.VITE_BASE_URL}/videos-list`)
-        .then((response) => response.json())
-        .then((data) => setVideoList(data.videos))
-        .catch((error) => console.error('Error fetching videos:', error));
-    }, []);
+        videoElement.muted = state.isMuted || false;
+      }
+    });
+  
+    return () => socket.off('admin_control');
+  }, []);
+  
+
 
 // Overlay and coin multiplier
 useEffect(() => {
