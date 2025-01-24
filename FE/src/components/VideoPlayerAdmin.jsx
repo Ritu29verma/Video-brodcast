@@ -194,12 +194,12 @@ const [hasInteracted, setHasInteracted] = useState(false);
   
       try {
         // Load and play the video
-        videoRef.current.load(); 
+        videoRef.current.load();
         await videoRef.current.play(); 
         console.log('Video started playing successfully.');
       } catch (error) {
         console.error('Error starting video playback:', error);
-        videoRef.current.muted = true; 
+        videoRef.current.muted = false; 
         try {
           await videoRef.current.play();
           console.log('Autoplay restriction resolved with muted playback.');
