@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const Admin = require("../models/Admin");
 
+
 exports.registerAdmin = async (req, res) => {
     try {
       const { phoneNo, countryCode, password } = req.body;
@@ -16,12 +17,11 @@ exports.registerAdmin = async (req, res) => {
         phoneNo,
         countryCode: normalizedCountryCode,
         password: password,
-        role: 'admin', 
       });
   
       res.status(201).json({
         message: "Admin registered successfully",
-        admin: { id: admin._id, phoneNo: admin.phoneNo, countryCode: admin.countryCode,  role: admin.role,},
+        admin: { id: admin._id, phoneNo: admin.phoneNo, countryCode: admin.countryCode,  role: "admin",},
       });
     } catch (error) {
       console.error("Error during admin registration:", error); 
@@ -46,12 +46,12 @@ exports.registerAdmin = async (req, res) => {
       if (!admin|| admin.password !== password) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
-      const token = jwt.sign({ adminId: admin.id,  role: admin.role, }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign({ adminId: admin.id }, process.env.JWT_SECRET);
   
       res.status(200).json({
         message: "Login successful",
         token,
-        admin: { id: admin.id, phoneNo: admin.phoneNo, countryCode: admin.countryCode ,  role: admin.role,},
+        admin: { id: admin.id, phoneNo: admin.phoneNo, countryCode: admin.countryCode, role: "admin"},
       });
     } catch (error) {
       console.error("Error during admin login:", error);

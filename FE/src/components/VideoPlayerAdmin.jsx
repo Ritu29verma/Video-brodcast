@@ -348,23 +348,35 @@ const [hasInteracted, setHasInteracted] = useState(false);
         </button>
       </div>
           <div className="mb-4">
-            <h2 className="text-xl font-semibold mb-2">Select a Video:</h2>
-            <ul className="space-y-2">
-              {videoList.map((video) => (
-                <li key={video}>
+            <ul className="flex flex-row space-x-2">
+              
+                <li key={videoList[0]}>
                   <button
-                    onClick={() => handleSelectVideo(video)}
+                    onClick={() => handleSelectVideo(videoList[0])}
                     
                     className={`w-full text-left px-4 py-2 rounded ${
-                      selectedVideo === `http://localhost:5000/videos/${video}`
+                      selectedVideo === `http://localhost:5000/videos/${videoList[0]}`
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-700 text-gray-200'
                     } hover:bg-blue-500`}
                   >
-                     Play {video}
+                     Start Game
                   </button>
                 </li>
-              ))}
+                <li key={videoList[2]}>
+                  <button
+                    onClick={() => handleSelectVideo(videoList[2])}
+                    
+                    className={`w-full text-left px-4 py-2 rounded ${
+                      selectedVideo === `http://localhost:5000/videos/${videoList[2]}`
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-200'
+                    } hover:bg-blue-500`}
+                  >
+                    Fly Away
+                  </button>
+                </li>
+            
             </ul>
           </div>
           {selectedVideo && (

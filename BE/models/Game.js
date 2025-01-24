@@ -22,7 +22,7 @@ const Game = sequelize.define('Game', {
   },
 }, {
   timestamps: true, // Enables automatic createdAt and updatedAt fields
-  tableName: 'games',
+  tableName: 'games_aviator',
 });
 
 module.exports = Game;

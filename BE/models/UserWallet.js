@@ -23,7 +23,7 @@ const UserWallet = sequelize.define('UserWallet', {
   },
 }, {
   timestamps: true,
-  tableName: 'user_wallets_avi',
+  tableName: 'wallets_aviator',
 });
 
 module.exports = UserWallet;

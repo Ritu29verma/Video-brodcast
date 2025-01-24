@@ -20,11 +20,6 @@ const Admin = sequelize.define('Admin', {
     type: DataTypes.STRING(255),
     allowNull: false,
   },
-  role: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: 'admin', 
-  },
   createdAt: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
@@ -36,7 +31,7 @@ const Admin = sequelize.define('Admin', {
   },
 }, {
   timestamps: false, 
-  tableName: 'admins', 
+  tableName: 'admin_aviator', 
 });
 
 module.exports = Admin;
