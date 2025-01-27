@@ -30,7 +30,7 @@ const Admin = sequelize.define('Admin', {
     onUpdate: DataTypes.NOW,
   },
 }, {
-  timestamps: false, 
+  timestamps: true, 
   tableName: 'admin_aviator', 
 });
 

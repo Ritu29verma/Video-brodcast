@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import LoginUser from "./pages/LoginUser"
 import PrivateRoute from './pages/PrivateRoute';
+import GameResults from './components/GameResults';
 
 const App = () => {
   return (
@@ -15,10 +16,13 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login-client" element={<LoginUser />} />
+        <Route path="/game" element={<GameResults/>} />
 
          {/* Private route for Admin */}
          <Route path="/admin" element={<PrivateRoute role="admin"><Admin/></PrivateRoute>} />
       </Routes>
+
+      
     </Router>
   );
 };

@@ -1,16 +1,16 @@
 const socketIo = require('socket.io');
-
+let adminLoggedOut = true;
 let videoState = {
   url: null,
   isPlaying: false,
-  currentTime: 0,
+  currentTime: 0, 
   isMuted: false,
 };
 
 let io; 
 
 module.exports = (server) => {
-  const io = socketIo(server, {
+   io = socketIo(server, {
     cors: {
       origin: 'http://localhost:5173',
       methods: ['GET', 'POST'],
@@ -106,52 +106,41 @@ module.exports = (server) => {
      // Admin updates the video state
   socket.on('admin_control', (state) => {
     currentVideoState = state; // Update the state globally
-    console.log('Admin updated video state:', state);
-
-    // Broadcast the updated state to all connected clients
+    // console.log('Admin updated video state:', state);
     socket.broadcast.emit('admin_control', state);
   });
-
-    // socket.on('admin_control', (state) => {
-    //   videoState = { ...videoState, ...state };
-    //   io.emit('client_control', videoState);
-    // });
-
-    socket.on('admin_video_state', (videoState) => {
-      console.log('Admin sent video state:', videoState);
   
-      // Send the state to the new client only
+  socket.on('admin_video_state', (videoState) => {
+      console.log('Admin sent video state:', videoState);
       socket.emit('video_state_update', videoState);
     });
     
 
-socket.on('admin_login', () => {
+  socket.on('admin_login', () => {
   console.log('Admin has logged in.');
   adminLoggedOut = false; // Set to false when admin logs in
 });
 
+ // Emit the current state depending on whether the admin is logged out
 socket.on('fetch_current_state', (callback) => {
-  if (typeof callback === 'function') {
-    // Check if the admin is logged out
-    if (adminLoggedOut) {
-      const defaultState = {
+  const state = adminLoggedOut
+    ? {
         url: null,
         currentTime: 0,
         isMuted: false,
         isPlaying: false,
-        action: []
-      };
-      console.log('Providing default state as admin is logged out.');
-      callback(defaultState);
-    } else {
-      // Return the current admin state if the admin is logged in
-      console.log('Providing current admin state.');
-      callback(videoState);
-    }
-  } else {
-    console.error('Callback is not a function.', typeof callback);
-  }
+        action: [],
+      }
+    : videoState;
+  console.log(`Providing ${adminLoggedOut ? 'default' : 'current admin'} state.`);
+  socket.emit('fetch_current_state', state);
 });
+
+socket.on('set_coin_reach', (coinReach) => {
+  console.log('Received coinReach update:', coinReach);
+  socket.emit('set_coin_reach', coinReach); // Emit the coinReach value to listeners
+});
+
 
     socket.on('disconnect', () => {
       console.log('User disconnected:', socket.id);

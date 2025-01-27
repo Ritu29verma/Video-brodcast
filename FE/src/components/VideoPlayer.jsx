@@ -83,7 +83,7 @@ const Client = () => {
   // Listen for real-time updates from the admin
   useEffect(() => {
     socket.on('admin_control', (state) => {
-      console.log('Real-time state update from admin:', state);
+      // console.log('Real-time state update from admin:', state);
       setVideoState(state);
   
       const videoElement = videoRef.current;
