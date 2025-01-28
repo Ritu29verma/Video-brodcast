@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import socket from "../components/socket";
 import CoinReachAdmin from './coinReachAdmin';
+import Muted from '../components/Muted';
 
 const VideoPlayerAdmin = ({ videoList }) => {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
-const [hasInteracted, setHasInteracted] = useState(false);
   const videoRef = useRef(null);
-  const [coinReach, setCoinReach] = useState('');
+  const [coinReach, setCoinReach] = useState(null);
+  const [inputValue, setInputValue] = useState("");
   const [currentMultiplier, setCurrentMultiplier] = useState();
   const [showOverlay, setShowOverlay] = useState(false);
   const [currentState, setCurrentState] = useState({
@@ -23,48 +24,7 @@ const [hasInteracted, setHasInteracted] = useState(false);
   const [stopLoop, setStopLoop] = useState(false);
   const [videoUrl, setVideoUrl] = useState(null);
   const [coinReachList, setCoinReachList] = useState([]);
-
-  useEffect(() => {
-    if (!hasInteracted) return;
-
-    // Handle user interaction and fetch the latest admin state
-    const handleInteraction = () => {
-        if (!hasInteracted) {
-          setHasInteracted(true);
-    
-          // Request the latest admin state upon interaction
-          socket.emit('fetch_current_state', {} , (state) => {
-            console.log('Fetched current state from admin:', state);
-            setAdminState(state);
-    
-            const videoElement = videoRef.current;
-            if (videoElement && state) {
-              videoElement.src = state.url;
-              videoElement.currentTime = state.currentTime || 0;
-              videoElement.muted = state.isMuted || false;
-    
-              // Start video playback if admin is playing
-              if (state.isPlaying) {
-                videoElement
-                  .play()
-                  .catch((err) => console.error('Playback error on interaction:', err));
-              } else {
-                videoElement.pause();
-              }
-            }
-          });
-        }
-      };
-
-      window.addEventListener('click', handleInteraction);
-      window.addEventListener('keydown', handleInteraction);
-    
-      return () => {
-        // Cleanup event listeners
-        window.removeEventListener('click', handleInteraction);
-        window.removeEventListener('keydown',handleInteraction);
-      };
-    }, [videoUrl, hasInteracted]);
+  const [video, setVideo] = useState(null); 
 
   const resetVideoState = () => {
     const resetState = {
@@ -146,6 +106,21 @@ const [hasInteracted, setHasInteracted] = useState(false);
     }
   }, [socket]); 
 
+  useEffect(() => {
+    socket.on('request_video_state', () => {
+      if (videoRef.current) {
+        const currentVideoState = {
+          url: videoRef.current.src,
+          currentTime: videoRef.current.currentTime,
+        };
+        socket.emit('admin_video_state', currentVideoState); // Emit state to the backend
+      }
+    });
+  
+    return () => {
+      socket.off('request_video_state'); // Clean up event listener
+    };
+  }, []);
   
    // Automatically play the next video after the current one ends
    const handleVideoEnd = () => {
@@ -195,19 +170,19 @@ const [hasInteracted, setHasInteracted] = useState(false);
     };
     setSelectedVideo(videoUrl);
     setCurrentState(updatedState);
-    setShowOverlay(video === videoList[1]); // Show overlay for the second video
-    setCurrentMultiplier(1.0); // Reset multiplier for the new game
-    setIsGameRunning(video === videoList[1]); // Set game running only for the second video
+    setShowOverlay(video === videoList[1]); 
+    setCurrentMultiplier(1.0); 
+    setIsGameRunning(video === videoList[1]); 
 
     socket.emit('admin_select_video', updatedState);
     socket.emit('video_change', { url: videoUrl, isPlaying: true });
 
-    // Ensure video element is ready to load and play
+ 
     if (videoRef.current) {
-      videoRef.current.pause();
+      // videoRef.current.pause();
       videoRef.current.src = videoUrl;
       videoRef.current.currentTime = 0; 
-      videoRef.current.muted = isMuted; 
+      videoRef.current.muted = true; 
   
       try {
         await videoRef.current.play(); 
@@ -222,132 +197,81 @@ const [hasInteracted, setHasInteracted] = useState(false);
       }
     }
 
-      // Trigger startGame when the first video is selected
-  if (video === videoList[1]) {
-    try {
-      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/game/start-game`, {
-        coinReach: 0, // Optional: Pass specific coinReach value
-      });
-      console.log('Game started:', response.data);
-      setIsGameRunning(true);
-    } catch (error) {
-      console.error('Error starting game:', error);
+    if (video === videoList[1]) {
+      socket.emit("start_multiplier"); // Emit to start multiplier
     }
-  }
 
-    if (video === videoList[2]) {
-      videoRef.current.onended = () => {
-        console.log('Fly Away video ended. Resetting frontend state.');
-        setCoinReach(''); 
-        setIsGameRunning(false);
-      };
+    if (video === videoList[0]) {
+      socket.emit("reset_game"); // Emit to reset the game
     }
+
+    // if (video === videoList[2]) {
+    //   videoRef.current.onended  = () => {
+    //     console.log('Fly Away video ended. Emitting "flyaway" event.');
+    //     socket.emit('flyaway'); // Emit flyaway event
+    //   };
+    // }
+  
   };
-  
-  useEffect(() => {
-    if (isGameRunning && showOverlay) {
-      const handleMultiplierUpdate = (newMultiplier) => {
-        console.log('Received multiplier:', newMultiplier); 
-        setCurrentMultiplier(newMultiplier);
-  
-        if (coinReachList.length > 0 && newMultiplier >= coinReachList[0]) {
-          const nextCoinReach = coinReachList[0];
-          console.log('Triggering Fly Away for Coin Reach:', nextCoinReach);
-          setCoinReachList((prevList) => prevList.slice(1));
-          handleFlyAway(nextCoinReach);
-        }
-      };
-      const handleSetCoinReach = (newCoinReach) => {
-        console.log('Received coinReach from server:', newCoinReach);
-        setCoinReach(newCoinReach);
-        handleSelectVideo(videoList[2]);
-      };
-    
-  
-      socket.on('update_multiplier', handleMultiplierUpdate);
-      socket.on('set_coin_reach', handleSetCoinReach);
-      return () => {
-        socket.off('update_multiplier', handleMultiplierUpdate);
-        socket.off('set_coin_reach', handleSetCoinReach);
-      };
-    }
-  }, [isGameRunning, showOverlay, coinReach, videoList]);
-  
 
   useEffect(() => {
-    socket.on('request_video_state', () => {
-      if (videoRef.current) {
-        const currentVideoState = {
-          url: videoRef.current.src,
-          currentTime: videoRef.current.currentTime,
-        };
-        socket.emit('admin_video_state', currentVideoState); // Emit state to the backend
-      }
+    socket.on("update_multiplier", (multiplier) => {
+      console.log("Multiplier updated:", multiplier);
+      setCurrentMultiplier(multiplier); 
+    });
+  
+  
+    socket.on("play_3rd_video", () => {
+      console.log("Play 3rd video");
+      handleSelectVideo(videoList[2]); 
     });
   
     return () => {
-      socket.off('request_video_state'); // Clean up event listener
+      socket.off("update_multiplier");
+      socket.off("update_coinList");
+      socket.off("play_3rd_video");
     };
   }, []);
 
-  const handleFlyAway = async () => {
-    let currentCoinReach = coinReach;
-  
-    if (!coinReach) {
-      // If no coinReach is set, use the current multiplier as the coinReach
-      currentCoinReach = currentMultiplier;
-      try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_BASE_URL}/api/game/fly-away`,{ currentMultiplier: currentCoinReach });
-        console.log('Coin Reach set dynamically:', currentCoinReach);
-        setCoinReach(currentCoinReach); // Update local coinReach state
-      } catch (error) {
-        console.error('Error setting dynamic Coin Reach:', error);
-      }
-    } else {
-      try {
-        const response = await axios.post( `${import.meta.env.VITE_BASE_URL}/api/game/set-coin-reach`, { coinReach: currentCoinReach });
-        console.log('Fly Away triggered:', response.data);
-      } catch (error) {
-        console.error('Error triggering Fly Away:', error.message);
-      }
-    }
-  
-    // Proceed to play the video after the Fly Away logic
-    handleSelectVideo(videoList[2]);
-  };
-  
-
   const handleStartGame = () => {
-    axios
-      .post(`${import.meta.env.VITE_BASE_URL}/api/game/set-coin-reach`, { coinReach })
-      .then((response) => {
-        console.log('Game started:', response.data);
-      })
-      .catch((error) => {
-        console.error('Error starting the game:', error.message);
-      });
+    if (!isNaN(inputValue) && inputValue > 0) {
+      const value = Number(inputValue); 
+      setCoinReach(value); 
+      socket.emit("setvalue", value); 
+      console.log("CoinReach value emitted:", value);
+    }
   };
+
+  // useEffect(() => {
+  //  socket.on('video_3', (data) => { setVideo(data); });
+  //   return () => { socket.off('video_3'); }; }, [socket]);
+
+  const handleFlyAway = () => {
+    handleSelectVideo(videoList[2]);
+      socket.emit("flyaway");
+      console.log("Fly Away clicked");
+  };
+  
   
   return (
         <>
           <h1 className="text-3xl font-bold mb-6 text-center text-blue-400">Admin Controls</h1>
           <div className="flex items-center">
-          <input
-            type="number"
-            placeholder="Enter Coin Reach"
-            value={coinReach} 
-            // onChange={(e) => setCoinReach(e.target.value)}
-            className="text-black px-2 py-1 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            onClick={handleStartGame}
-            className="bg-blue-600 text-white px-4 py-2 rounded ml-2 hover:bg-blue-700 disabled:bg-gray-400"
-            disabled={isNaN(coinReach) || coinReach <= 0}
-          >
-            Add Value
-          </button>
-        </div>
+      <input
+        type="number"
+        placeholder="Enter Coin Reach"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)} 
+        className="text-black px-2 py-1 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <button
+        onClick={handleStartGame} 
+        className="bg-blue-600 text-white px-4 py-2 rounded ml-2 hover:bg-blue-700 disabled:bg-gray-400"
+        disabled={isNaN(inputValue) || inputValue <= 0}
+      >
+        Add Value
+      </button>
+    </div>
           <div className="mb-4">
             <ul className="flex flex-row space-x-2">
               
@@ -355,7 +279,6 @@ const [hasInteracted, setHasInteracted] = useState(false);
                   <button
                    onClick={() => {
                     handleSelectVideo(videoList[0]);
-                    handleStartGame();
                   }}
                     className={`w-full text-left px-4 py-2 rounded ${
                       selectedVideo === `http://localhost:5000/videos/${videoList[0]}`
@@ -381,6 +304,7 @@ const [hasInteracted, setHasInteracted] = useState(false);
                     Fly Away
                   </button>
                 </li>
+                {/* <Muted/> */}
             
             </ul>
           </div>

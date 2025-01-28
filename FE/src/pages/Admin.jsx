@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useRef, useEffect, useState } from 'react';
 import VideoPlayerAdmin from '../components/VideoPlayerAdmin';
 import socket from "../components/socket";
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 const Admin = () => {
   const [videoList, setVideoList] = useState([]);
   const navigate = useNavigate();
-  const [hasInteracted, setHasInteracted] = useState(false);
+
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_BASE_URL}/videos-list`)
@@ -25,18 +25,6 @@ const Admin = () => {
 
   return (
     <div className="shadow-lg hover:bg-[#021024] flex flex-col items-center min-h-screen justify-center bg-gray-900 text-white p-6">
-    {/* Overlay for Start Screen */}
-    {!hasInteracted && (
-      <div
-        className="fixed inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-50"
-        onClick={() => setHasInteracted(true)}
-      >
-        <h1 className="text-3xl font-bold text-center text-blue-400 animate-pulse">
-          Click Anywhere or Press any Key to Start the Admin Panel
-        </h1>
-      </div>
-    )}
-
     {/* Main Content */}
     <div className="absolute top-4 right-4">
       <button
