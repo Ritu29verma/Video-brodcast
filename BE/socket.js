@@ -80,7 +80,7 @@ module.exports = (server) => {
         console.log("Multiplier reached CoinReach value:", multiplier);
         io.emit("play_3rd_video");
       }
-    }, 100);
+    }, 150);
   });
 
 
@@ -142,13 +142,6 @@ module.exports = (server) => {
     io.emit('stop_video_loop');
   });
 
-  socket.on('show_overlay', () => {
-    io.emit('show_overlay'); 
-  });
-
-  socket.on('hide_overlay', () => {
-    io.emit('hide_overlay'); 
-  });
 
   socket.on('pause', () => {
     console.log('Pause command received');

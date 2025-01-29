@@ -261,10 +261,6 @@ const VideoPlayerAdmin = () => {
     }
   };
 
-  // useEffect(() => {
-  //  socket.on('video_3', (data) => { setVideo(data); });
-  //   return () => { socket.off('video_3'); }; }, [socket]);
-
   const handleFlyAway = () => {
       socket.emit("flyaway");
   };
@@ -336,7 +332,7 @@ const VideoPlayerAdmin = () => {
           />
           {showOverlay && (
             <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
-              <span className="text-white text-4xl">{currentMultiplier.toFixed(1)}x</span>
+              <span className="text-white font-bold text-5xl">{currentMultiplier.toFixed(1)}x</span>
             </div>
           )}
         </div>

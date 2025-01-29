@@ -18,6 +18,28 @@ const Client = () => {
   const [currentMultiplier, setCurrentMultiplier] = useState(1);
   const [coinReach, setCoinReach] = useState(0);
   
+   const fetchVideoList = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BASE_URL}/videos-list`);
+        const data = await response.json();
+        return data.videos; // Return the video list instead of setting state
+      } catch (error) {
+        console.error("Error fetching videos:", error);
+        return []; // Return an empty array on error
+      }
+    };
+    
+    useEffect(() => {
+      const loadVideos = async () => {
+        const videos = await fetchVideoList();
+        setVideoList(videos);
+        console.log(videoList); // Log the fetched videos
+      };
+    
+      loadVideos();
+    }, []);
+    
+
   useEffect(() => {
     socket.on('admin_logout', () => {
       console.log('Admin has logged out, resetting video state');
@@ -87,6 +109,7 @@ const Client = () => {
       setVideoState(state);
   
       const videoElement = videoRef.current;
+
       if (videoElement && state.url) {
         if (videoElement.src !== state.url) {
           videoElement.src = state.url;
@@ -118,16 +141,13 @@ const Client = () => {
 // Overlay and coin multiplier
 useEffect(() => {
   
-  socket.on('show_overlay', () => setShowOverlay(true));
-  socket.on('hide_overlay', () => setShowOverlay(false));
   socket.on('set_coin_reach', (value) => setCoinReach(value));
   socket.on("update_multiplier", (multiplier) => {
     console.log("Multiplier updated:", multiplier);
     setCurrentMultiplier(multiplier); 
+
   });
   return () => {
-    socket.off('show_overlay');
-    socket.off('hide_overlay');
     socket.off('set_coin_reach');
     socket.off('update_multiplier');
   };
@@ -139,7 +159,11 @@ useEffect(() => {
     console.log('Received video switch from admin:', state);
     console.log('Current video list:', videoList);
     console.log('State URL:', state.url);
-
+    setShowOverlay(prevState => {
+      const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/${videoList[1]}`;
+      console.log("Updated showOverlay:", newState);
+      return newState;
+  });
     setVideoUrl(state.url);
     const videoElement = videoRef.current;
     if (videoElement) {
@@ -170,6 +194,11 @@ useEffect(() => {
       socket.emit('fetch_current_state', {} , (state) => {
         console.log('Fetched current state from admin:', state);
         setAdminState(state);
+        setShowOverlay(prevState => {
+          const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/${videoList[1]}`;
+          console.log("Updated showOverlay:", newState);
+          return newState;
+      });
 
         const videoElement = videoRef.current;
         if (videoElement && state) {
@@ -231,10 +260,19 @@ useEffect(() => {
     socket.on('start_stream', (state) => {
       console.log('Received initial state:', state);
       setAdminState(state);
-  
+      setShowOverlay(prevState => {
+        const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/${videoList[1]}`;
+        console.log("Updated showOverlay:", newState);
+        return newState;
+    });
       const videoElement = videoRef.current;
       if (state.url) {
         setVideoUrl(state.url);
+        setShowOverlay(prevState => {
+          const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/${videoList[1]}`;
+          console.log("Updated showOverlay:", newState);
+          return newState;
+      });
         if (videoElement) {
           videoElement.src = state.url;
           videoElement.currentTime = state.currentTime || 0;
@@ -242,55 +280,7 @@ useEffect(() => {
         }
       }
     });
-  
-    // Listen for video change
-    socket.on('video_change', (state) => {
-      console.log('Video changed to:', state);
-      setAdminState(state);
-  
-      const videoElement = videoRef.current;
-      if (state.url) {
-        setVideoUrl(state.url);
-        if (videoElement) {
-          videoElement.src = state.url;
-          videoElement.currentTime = state.currentTime || 0;
-          videoElement.muted = state.isMuted || false;
-  
-          if (state.isPlaying) {
-            videoElement.play().catch((err) => {
-              console.error('Error playing video:', err);
-            });
-          }
-        }
-      }
-    });
-  
-    // Listen for play command
-    socket.on('play', () => {
-      console.log('Play command received');
-      const videoElement = videoRef.current;
-      if (videoElement && videoElement.src) {
-        videoElement.play().catch((err) => console.error('Error playing video:', err));
-      } else {
-        console.warn('No valid video source to play.');
-      }
-    });
 
-    socket.on('pause', () => {
-      const videoElement = videoRef.current;
-      if (videoElement) {
-        videoElement.pause();
-      }
-    });
-
-    socket.on('restart', () => {
-      const videoElement = videoRef.current;
-      if (videoElement) {
-        videoElement.currentTime = 0;
-        videoElement.play()
-          .catch((err) => console.error('Error restarting video:', err));
-      }
-    });
 
     // Attach event listeners for interaction
     window.addEventListener('click', handleUserInteraction);
@@ -308,7 +298,8 @@ useEffect(() => {
 
   return (
     <div className="flex flex-col items-center w-full ">
-    <video
+   <div className='relative'>
+   <video
       ref={videoRef}
       controls={false}
       className="w-full max-w-3xl rounded shadow-lg"
@@ -318,9 +309,10 @@ useEffect(() => {
     />
     {showOverlay && (
             <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
-              <span className="text-white text-4xl">{currentMultiplier.toFixed(1)}x</span>
+              <span className="text-white font-bold text-5xl">{currentMultiplier.toFixed(1)}x</span>
             </div>
           )}
+   </div>
         </div>
   );
 };
