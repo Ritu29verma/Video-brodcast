@@ -27,13 +27,6 @@ module.exports = (server) => {
   io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
-    // const video3 = {
-    //   name: 'Video 3',
-    //   url: `${process.env.BASE_URL}/videos/video3.mp4`
-    // };
-    // socket.on('request_video_3', () => {
-    //   socket.emit('video_3', video3);
-    // });
   
 
   socket.on("setvalue", (value) => {
@@ -157,79 +150,52 @@ module.exports = (server) => {
     io.emit('hide_overlay'); 
   });
 
-  socket.on('update_multiplier', (multiplier) => {
-    io.emit('update_multiplier', multiplier); 
-  });
-
-  socket.on('play', () => {
-    console.log('Play command received');
-    videoState.isPlaying = true;
-    io.emit('play');
-  });
-
   socket.on('pause', () => {
     console.log('Pause command received');
     io.emit('pause');
   });
 
-  socket.on('mute', () => {
-    console.log('Mute command received');
-    io.emit('mute');
-  });
-
-  socket.on('unmute', () => {
-    console.log('Unmute command received');
-    io.emit('unmute');
-  });
-
-  socket.on('restart', () => {
-    console.log('Restart command received');
-    io.emit('restart');
-  });
 
   socket.emit('start_stream', videoState);
 
    // Admin updates the video state
-socket.on('admin_control', (state) => {
-  currentVideoState = state; // Update the state globally
-  // console.log('Admin updated video state:', state);
-  socket.broadcast.emit('admin_control', state);
-});
+    socket.on('admin_control', (state) => {
+      currentVideoState = state; // Update the state globally
+      // console.log('Admin updated video state:', state);
+      socket.broadcast.emit('admin_control', state);
+    });
 
-socket.on('admin_video_state', (videoState) => {
-    console.log('Admin sent video state:', videoState);
-    socket.emit('video_state_update', videoState);
-  });
+    socket.on('admin_video_state', (videoState) => {
+        console.log('Admin sent video state:', videoState);
+        socket.emit('video_state_update', videoState);
+      });
+      
+
+    socket.on('admin_login', () => {
+    console.log('Admin has logged in.');
+    adminLoggedOut = false; // Set to false when admin logs in
+    });
+
+    // Emit the current state depending on whether the admin is logged out
+    socket.on('fetch_current_state', (callback) => {
+    const state = adminLoggedOut
+      ? {
+          url: null,
+          currentTime: 0,
+          isMuted: false,
+          isPlaying: false,
+          action: [],
+        }
+      : videoState;
+    console.log(`Providing ${adminLoggedOut ? 'default' : 'current admin'} state.`);
+    socket.emit('fetch_current_state', state);
+    });
+
+    socket.on('set_coin_reach', (coinReach) => {
+    console.log('Received coinReach update:', coinReach);
+    socket.emit('set_coin_reach', coinReach); // Emit the coinReach value to listeners
+    });
   
-
-socket.on('admin_login', () => {
-console.log('Admin has logged in.');
-adminLoggedOut = false; // Set to false when admin logs in
-});
-
-// Emit the current state depending on whether the admin is logged out
-socket.on('fetch_current_state', (callback) => {
-const state = adminLoggedOut
-  ? {
-      url: null,
-      currentTime: 0,
-      isMuted: false,
-      isPlaying: false,
-      action: [],
-    }
-  : videoState;
-console.log(`Providing ${adminLoggedOut ? 'default' : 'current admin'} state.`);
-socket.emit('fetch_current_state', state);
-});
-
-socket.on('set_coin_reach', (coinReach) => {
-console.log('Received coinReach update:', coinReach);
-socket.emit('set_coin_reach', coinReach); // Emit the coinReach value to listeners
-});
-  
-
-
-
     socket.on('disconnect', () => {
       console.log('User disconnected:', socket.id);
     });

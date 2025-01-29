@@ -117,11 +117,14 @@ const Client = () => {
 
 // Overlay and coin multiplier
 useEffect(() => {
+  
   socket.on('show_overlay', () => setShowOverlay(true));
   socket.on('hide_overlay', () => setShowOverlay(false));
   socket.on('set_coin_reach', (value) => setCoinReach(value));
-  socket.on('update_multiplier', (newMultiplier) => setCurrentMultiplier(newMultiplier));
-
+  socket.on("update_multiplier", (multiplier) => {
+    console.log("Multiplier updated:", multiplier);
+    setCurrentMultiplier(multiplier); 
+  });
   return () => {
     socket.off('show_overlay');
     socket.off('hide_overlay');
@@ -313,12 +316,12 @@ useEffect(() => {
       autoPlay
       muted
     />
-     {showOverlay && (
-        <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
-          <span className="text-white pt-16 text-4xl">{currentMultiplier.toFixed(1)}x</span>
+    {showOverlay && (
+            <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
+              <span className="text-white text-4xl">{currentMultiplier.toFixed(1)}x</span>
+            </div>
+          )}
         </div>
-      )}
-  </div>
   );
 };
 

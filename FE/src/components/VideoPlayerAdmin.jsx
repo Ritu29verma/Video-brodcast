@@ -2,10 +2,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import socket from "../components/socket";
-import CoinReachAdmin from './coinReachAdmin';
-import Muted from '../components/Muted';
 
-const VideoPlayerAdmin = ({ videoList }) => {
+
+const VideoPlayerAdmin = () => {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
   const videoRef = useRef(null);
@@ -24,7 +23,7 @@ const VideoPlayerAdmin = ({ videoList }) => {
   const [stopLoop, setStopLoop] = useState(false);
   const [videoUrl, setVideoUrl] = useState(null);
   const [coinReachList, setCoinReachList] = useState([]);
-  const [video, setVideo] = useState(null); 
+  const [videoList, setVideoList] = useState([]);
 
   const resetVideoState = () => {
     const resetState = {
@@ -42,6 +41,27 @@ const VideoPlayerAdmin = ({ videoList }) => {
     socket.emit('admin_reset_state', resetState);
   };
 
+  const fetchVideoList = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/videos-list`);
+      const data = await response.json();
+      return data.videos; // Return the video list instead of setting state
+    } catch (error) {
+      console.error("Error fetching videos:", error);
+      return []; // Return an empty array on error
+    }
+  };
+  
+  useEffect(() => {
+    const loadVideos = async () => {
+      const videos = await fetchVideoList();
+      setVideoList(videos);
+      console.log(videoList); // Log the fetched videos
+    };
+  
+    loadVideos();
+  }, []);
+  
   useEffect(() => {
     socket.on('admin_logout', resetVideoState);
     return () => socket.off('admin_logout');
@@ -57,6 +77,7 @@ const VideoPlayerAdmin = ({ videoList }) => {
       socket.off('admin_logged_in');
     };
   }, []);
+
 
   useEffect(() => {
     if (localStorage.getItem('token') && currentState.isPlaying && videoRef.current) {
@@ -146,13 +167,6 @@ const VideoPlayerAdmin = ({ videoList }) => {
     }
   };
 
-  const handlePlay = () => {
-    videoRef.current.play();
-    const updatedState = { ...currentState, isPlaying: true, action: 'play' };
-    setCurrentState(updatedState);
-    socket.emit('play');
-  };
-
   const handleSelectVideo = async (video) => {
     const isAdminLoggedIn = localStorage.getItem('token');
     if (!isAdminLoggedIn) {
@@ -173,7 +187,7 @@ const VideoPlayerAdmin = ({ videoList }) => {
     setShowOverlay(video === videoList[1]); 
     setCurrentMultiplier(1.0); 
     setIsGameRunning(video === videoList[1]); 
-
+    console.log(videoUrl)
     socket.emit('admin_select_video', updatedState);
     socket.emit('video_change', { url: videoUrl, isPlaying: true });
 
@@ -204,27 +218,32 @@ const VideoPlayerAdmin = ({ videoList }) => {
     if (video === videoList[0]) {
       socket.emit("reset_game"); // Emit to reset the game
     }
-
-    // if (video === videoList[2]) {
-    //   videoRef.current.onended  = () => {
-    //     console.log('Fly Away video ended. Emitting "flyaway" event.');
-    //     socket.emit('flyaway'); // Emit flyaway event
-    //   };
-    // }
   
   };
 
   useEffect(() => {
+
     socket.on("update_multiplier", (multiplier) => {
       console.log("Multiplier updated:", multiplier);
       setCurrentMultiplier(multiplier); 
     });
-  
-  
-    socket.on("play_3rd_video", () => {
+
+    socket.on("play_3rd_video", async () => {
       console.log("Play 3rd video");
-      handleSelectVideo(videoList[2]); 
+  
+      // Fetch video list and wait for it to complete
+      const videos = await fetchVideoList();
+      setVideoList(videos);
+  
+      // Ensure handleSelectVideo runs after videoList is updated
+      if (videos.length > 2) {
+        console.log(videos[2]); // Debugging: Check if index 2 exists
+        handleSelectVideo(videos[2]); 
+      } else {
+        console.warn("Not enough videos in the list!");
+      }
     });
+  
   
     return () => {
       socket.off("update_multiplier");
@@ -247,9 +266,7 @@ const VideoPlayerAdmin = ({ videoList }) => {
   //   return () => { socket.off('video_3'); }; }, [socket]);
 
   const handleFlyAway = () => {
-    handleSelectVideo(videoList[2]);
       socket.emit("flyaway");
-      console.log("Fly Away clicked");
   };
   
   
@@ -304,7 +321,7 @@ const VideoPlayerAdmin = ({ videoList }) => {
                     Fly Away
                   </button>
                 </li>
-                {/* <Muted/> */}
+            
             
             </ul>
           </div>
@@ -325,9 +342,7 @@ const VideoPlayerAdmin = ({ videoList }) => {
         </div>
       )}
           <div className="flex gap-4">
-            <button onClick={handlePlay} className="bg-green-500 px-4 py-2 rounded hover:bg-green-600">
-              Play
-            </button>
+          
             <button onClick={handleStopLoop} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
           Stop Game
         </button>

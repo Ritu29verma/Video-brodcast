@@ -9,12 +9,7 @@ const Admin = () => {
   const navigate = useNavigate();
 
 
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_BASE_URL}/videos-list`)
-      .then((response) => response.json())
-      .then((data) => setVideoList(data.videos))
-      .catch((error) => console.error('Error fetching videos:', error));
-  }, []);
+
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -34,7 +29,7 @@ const Admin = () => {
         Logout
       </button>
     </div>
-    <VideoPlayerAdmin videoList={videoList} />
+    <VideoPlayerAdmin />
   </div>
   );
 };
