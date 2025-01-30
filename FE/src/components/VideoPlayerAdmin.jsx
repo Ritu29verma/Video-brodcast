@@ -8,7 +8,6 @@ const VideoPlayerAdmin = () => {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
   const videoRef = useRef(null);
-  const [coinReach, setCoinReach] = useState(null);
   const [inputValue, setInputValue] = useState("");
   const [currentMultiplier, setCurrentMultiplier] = useState();
   const [showOverlay, setShowOverlay] = useState(false);
@@ -16,30 +15,11 @@ const VideoPlayerAdmin = () => {
     url: null,
     isPlaying: false,
     currentTime: 0,
-    isMuted: false,
-    action: null,    
+    isMuted: false, 
   });
-  const [isGameRunning, setIsGameRunning] = useState(false);
   const [stopLoop, setStopLoop] = useState(false);
-  const [videoUrl, setVideoUrl] = useState(null);
-  const [coinReachList, setCoinReachList] = useState([]);
   const [videoList, setVideoList] = useState([]);
 
-  const resetVideoState = () => {
-    const resetState = {
-      url: null,
-      currentTime: 0,
-      isMuted: false,
-      isPlaying: false,
-      action: null,
-    };
-    setCurrentState(resetState);
-    if (videoRef.current) {
-      videoRef.current.src = '';
-      videoRef.current.currentTime = 0;
-    }
-    socket.emit('admin_reset_state', resetState);
-  };
 
   const fetchVideoList = async () => {
     try {
@@ -48,7 +28,7 @@ const VideoPlayerAdmin = () => {
       return data.videos; // Return the video list instead of setting state
     } catch (error) {
       console.error("Error fetching videos:", error);
-      return []; // Return an empty array on error
+      return []; 
     }
   };
   
@@ -61,26 +41,9 @@ const VideoPlayerAdmin = () => {
   
     loadVideos();
   }, []);
-  
-  useEffect(() => {
-    socket.on('admin_logout', resetVideoState);
-    return () => socket.off('admin_logout');
-  }, []);
 
   useEffect(() => {
-    socket.on('admin_logged_in', (data) => {
-      console.log('admin logged in:', data.phoneNo);
-      handleSelectVideo(videoList[0]); 
-    });
-
-    return () => {
-      socket.off('admin_logged_in');
-    };
-  }, []);
-
-
-  useEffect(() => {
-    if (localStorage.getItem('token') && currentState.isPlaying && videoRef.current) {
+    if (currentState.isPlaying && videoRef.current) {
       const interval = setInterval(() => {
         const updatedState = {
           url: currentState.url,
@@ -95,24 +58,20 @@ const VideoPlayerAdmin = () => {
   }, [currentState.isPlaying, currentState.url]);
 
   useEffect(() => {
-    const isAdminLoggedIn = localStorage.getItem('token');
-    if (isAdminLoggedIn) {
-      // Fetch the current state from the server
-      socket.emit('fetch_current_state', {}, (state) => {
-        console.log('Fetched current state on login:', state);
-        setCurrentState(state);
+    socket.emit('fetch_current_state', {}, (state) => {
+      console.log('Fetched current state on login:', state);
+      setCurrentState(state);
   
-        const videoElement = videoRef.current;
-  
+      const videoElement = videoRef.current;
         // Ensure the video element and state URL are valid
-        if (videoElement) {
-          if (state.url) {
-            videoElement.src = state.url;
-            videoElement.currentTime = state.currentTime || 0;
-            videoElement.muted = state.isMuted || false;
+      if (videoElement) {
+        if (state.url) {
+          videoElement.src = state.url;
+          videoElement.currentTime = state.currentTime || 0;
+          videoElement.muted = state.isMuted || false;
   
             // Attempt to play the video if it's marked as playing
-            if (state.isPlaying) {
+          if (state.isPlaying) {
               videoElement.play().catch((err) => {
                 console.error('Error playing video on login:', err);
               });
@@ -124,26 +83,9 @@ const VideoPlayerAdmin = () => {
           console.error('Video element is not initialized.');
         }
       });
-    }
   }, [socket]); 
+  
 
-  useEffect(() => {
-    socket.on('request_video_state', () => {
-      if (videoRef.current) {
-        const currentVideoState = {
-          url: videoRef.current.src,
-          currentTime: videoRef.current.currentTime,
-        };
-        socket.emit('admin_video_state', currentVideoState); // Emit state to the backend
-      }
-    });
-  
-    return () => {
-      socket.off('request_video_state'); // Clean up event listener
-    };
-  }, []);
-  
-   // Automatically play the next video after the current one ends
    const handleVideoEnd = () => {
     if (stopLoop) return;
     const currentIndex = videoList.indexOf(selectedVideo.split('/').pop()); 
@@ -157,7 +99,6 @@ const VideoPlayerAdmin = () => {
     }
   };
 
-  // Stop the loop when the stop button is clicked
   const handleStopLoop = () => {
     setStopLoop(true);
     if (videoRef.current) {
@@ -168,11 +109,6 @@ const VideoPlayerAdmin = () => {
   };
 
   const handleSelectVideo = async (video) => {
-    const isAdminLoggedIn = localStorage.getItem('token');
-    if (!isAdminLoggedIn) {
-      console.warn('Admin is logged out, video selection is disabled.');
-      return;
-    }
     setStopLoop(false); 
     const videoUrl = `${import.meta.env.VITE_BASE_URL}/videos/${video}`;
     const updatedState = {
@@ -180,20 +116,14 @@ const VideoPlayerAdmin = () => {
       currentTime: 0,
       isPlaying: true, 
       isMuted: isMuted, 
-      action: ['select', 'play'],
     };
     setSelectedVideo(videoUrl);
     setCurrentState(updatedState);
     setShowOverlay(video === videoList[1]); 
     setCurrentMultiplier(1.0); 
-    setIsGameRunning(video === videoList[1]); 
     console.log(videoUrl)
-    socket.emit('admin_select_video', updatedState);
     socket.emit('video_change', { url: videoUrl, isPlaying: true });
-
- 
     if (videoRef.current) {
-      // videoRef.current.pause();
       videoRef.current.src = videoUrl;
       videoRef.current.currentTime = 0; 
       videoRef.current.muted = true; 
@@ -210,19 +140,14 @@ const VideoPlayerAdmin = () => {
         }
       }
     }
-
     if (video === videoList[1]) {
       socket.emit("start_multiplier"); // Emit to start multiplier
     }
-
     if (video === videoList[0]) {
       socket.emit("reset_game"); // Emit to reset the game
-    }
-  
-  };
+    }};
 
   useEffect(() => {
-
     socket.on("update_multiplier", (multiplier) => {
       console.log("Multiplier updated:", multiplier);
       setCurrentMultiplier(multiplier); 
@@ -230,10 +155,8 @@ const VideoPlayerAdmin = () => {
 
     socket.on("play_3rd_video", async () => {
       console.log("Play 3rd video");
-  
-      // Fetch video list and wait for it to complete
       const videos = await fetchVideoList();
-      setVideoList(videos);
+      setVideoList(() => videos);
   
       // Ensure handleSelectVideo runs after videoList is updated
       if (videos.length > 2) {
@@ -243,47 +166,48 @@ const VideoPlayerAdmin = () => {
         console.warn("Not enough videos in the list!");
       }
     });
-  
-  
     return () => {
       socket.off("update_multiplier");
-      socket.off("update_coinList");
       socket.off("play_3rd_video");
     };
   }, []);
 
-  const handleStartGame = () => {
+  const handleSubmit = (e) => {
+    e.preventDefault(); // Prevent page reload
+
     if (!isNaN(inputValue) && inputValue > 0) {
-      const value = Number(inputValue); 
-      setCoinReach(value); 
-      socket.emit("setvalue", value); 
+      const value = Number(inputValue);
+      socket.emit("setvalue", value);
       console.log("CoinReach value emitted:", value);
+      
+      setInputValue(""); // Clear input after submission
     }
   };
 
-  const handleFlyAway = () => {
-      socket.emit("flyaway");
-  };
-  
+  const isButtonEnabled = selectedVideo === `${import.meta.env.VITE_BASE_URL}/videos/${videoList[0]}`;
+
+  const handleFlyAway = () => {socket.emit("flyaway");};
   
   return (
         <>
           <h1 className="text-3xl font-bold mb-6 text-center text-blue-400">Admin Controls</h1>
           <div className="flex items-center">
-      <input
-        type="number"
-        placeholder="Enter Coin Reach"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)} 
-        className="text-black px-2 py-1 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-      <button
-        onClick={handleStartGame} 
-        className="bg-blue-600 text-white px-4 py-2 rounded ml-2 hover:bg-blue-700 disabled:bg-gray-400"
-        disabled={isNaN(inputValue) || inputValue <= 0}
-      >
-        Add Value
-      </button>
+          <form onSubmit={handleSubmit} className="flex items-center">
+            <input
+              type="number"
+              placeholder="Enter Coin Reach"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className="text-black px-2 py-1 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-4 py-2 rounded ml-2 hover:bg-blue-700 disabled:bg-gray-400"
+              disabled={!isButtonEnabled}
+            >
+              Add Value
+            </button>
+    </form>
     </div>
           <div className="mb-4">
             <ul className="flex flex-row space-x-2">
@@ -294,7 +218,7 @@ const VideoPlayerAdmin = () => {
                     handleSelectVideo(videoList[0]);
                   }}
                     className={`w-full text-left px-4 py-2 rounded ${
-                      selectedVideo === `http://localhost:5000/videos/${videoList[0]}`
+                      selectedVideo === `${import.meta.env.VITE_BASE_URL}/videos/${videoList[0]}`
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-700 text-gray-200'
                     } hover:bg-blue-500`}
@@ -309,7 +233,7 @@ const VideoPlayerAdmin = () => {
                     }}
                     
                     className={`w-full text-left px-4 py-2 rounded ${
-                      selectedVideo === `http://localhost:5000/videos/${videoList[2]}`
+                      selectedVideo === `${import.meta.env.VITE_BASE_URL}/videos/${videoList[2]}`
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-700 text-gray-200'
                     } hover:bg-blue-500`}

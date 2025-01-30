@@ -33,9 +33,10 @@ exports.checkClient = async (req, res) => {
     res.status(200).json({
       message: 'Client found successfully',
       client: {
+        name: client.name,
         code: client.code,
-        phoneNo: client.phoneNo,
-        role: "client"
+        wallet_amount: client.matkaLimit,
+        role: "client",
       },
       token, 
     });

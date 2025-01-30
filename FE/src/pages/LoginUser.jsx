@@ -19,11 +19,11 @@ const LoginUser = () => {
       if (response.status === 200) {
         const { message, client, token } = response.data;
 
-        // Store client information and token in localStorage
-        localStorage.setItem("client_code", client.code);
-        localStorage.setItem("client_phoneNo", client.phoneNo);
-        localStorage.setItem("role", client.role);  // Storing the role
-        localStorage.setItem("token", token);  // Storing the token
+        sessionStorage.setItem("client_code", client.code);
+        sessionStorage.setItem("name", client.name);
+        sessionStorage.setItem("wallet", client.wallet_amount);
+        sessionStorage.setItem("role", client.role);  // Storing the role
+        sessionStorage.setItem("token", token);  // Storing the token
 
         console.log(message);  // Optional: Log success message
         navigate("/homepage");

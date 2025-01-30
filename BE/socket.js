@@ -1,4 +1,5 @@
 const socketIo = require('socket.io');
+const dotenv = require("dotenv");
 let coinList = []; 
 let finalCoinList = [];
 let multiplier = 1.0; 
@@ -18,7 +19,7 @@ let videoState = {
 module.exports = (server) => {
    io = socketIo(server, {
     cors: {
-      origin: 'http://localhost:5173',
+      origin: process.env.SOCKET_URL,
       methods: ['GET', 'POST'],
       credentials: true,
     },
@@ -26,9 +27,7 @@ module.exports = (server) => {
 
   io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
-
-  
-
+    
   socket.on("setvalue", (value) => {
     if (value && !isNaN(value)) {
       coinReach = Number(value); 
@@ -41,6 +40,7 @@ module.exports = (server) => {
       }
     }
   });
+
   socket.on("flyaway", () => {
     console.log("Fly Away clicked");
 
@@ -48,13 +48,12 @@ module.exports = (server) => {
       clearInterval(multiplierInterval);
       multiplierInterval = null;
     }
-
     coinList.push(multiplier); 
     console.log("CoinReach added by Fly Away:", multiplier);
-
     io.emit("update_coinList", coinList); 
     io.emit("play_3rd_video"); 
   });
+
   socket.on("start_multiplier", () => {
     if (multiplierInterval) {
       clearInterval(multiplierInterval);
@@ -72,14 +71,6 @@ module.exports = (server) => {
           io.emit("update_coinList", coinList);
           coinReach = null; 
         }
-
-      if (coinList.includes(multiplier)) {
-        clearInterval(multiplierInterval);
-        multiplierInterval = null;
-
-        console.log("Multiplier reached CoinReach value:", multiplier);
-        io.emit("play_3rd_video");
-      }
     }, 150);
   });
 
@@ -100,36 +91,6 @@ module.exports = (server) => {
     io.emit("update_multiplier", multiplier); 
   });
 
-  socket.on('admin_logout', () => {
-    console.log('Admin has logged out');
-    videoState = {
-      url: null,
-      currentTime: 0,
-      isMuted: false,
-      isPlaying: false,
-    };
-    io.emit('admin_logout'); // Notify clients that the admin logged out
-    io.emit('admin_control', videoState); // Reset the video state on all clients
-  });
-
-  socket.on('admin_select_video', (state) => {
-    if (!state || !state.url) {
-      console.error('Invalid state received from admin_select_video:', state);
-      return;
-    }
-
-    console.log('Admin selected video:', state.url);
-
-    videoState = {
-      ...videoState,
-      url: state.url,
-      currentTime: 0,
-      isPlaying: true,
-      isMuted: state.isMuted,
-    };
-
-    io.emit('admin_control', videoState);
-  });
 
   socket.on('video_change', (state) => {
     videoState = { ...state, currentTime: 0 };
@@ -140,12 +101,6 @@ module.exports = (server) => {
   socket.on('stop_video_loop', () => {
     console.log('Stop video loop event received from admin');
     io.emit('stop_video_loop');
-  });
-
-
-  socket.on('pause', () => {
-    console.log('Pause command received');
-    io.emit('pause');
   });
 
 
@@ -162,12 +117,7 @@ module.exports = (server) => {
         console.log('Admin sent video state:', videoState);
         socket.emit('video_state_update', videoState);
       });
-      
 
-    socket.on('admin_login', () => {
-    console.log('Admin has logged in.');
-    adminLoggedOut = false; // Set to false when admin logs in
-    });
 
     // Emit the current state depending on whether the admin is logged out
     socket.on('fetch_current_state', (callback) => {
@@ -182,11 +132,6 @@ module.exports = (server) => {
       : videoState;
     console.log(`Providing ${adminLoggedOut ? 'default' : 'current admin'} state.`);
     socket.emit('fetch_current_state', state);
-    });
-
-    socket.on('set_coin_reach', (coinReach) => {
-    console.log('Received coinReach update:', coinReach);
-    socket.emit('set_coin_reach', coinReach); // Emit the coinReach value to listeners
     });
   
     socket.on('disconnect', () => {

@@ -5,17 +5,12 @@ import { useNavigate } from 'react-router-dom';
 
 
 const Admin = () => {
-  const [videoList, setVideoList] = useState([]);
   const navigate = useNavigate();
 
-
-
-
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    socket.emit('admin_logout');
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("role")
     navigate("/login");
-    resetVideoState();
   };
 
   return (

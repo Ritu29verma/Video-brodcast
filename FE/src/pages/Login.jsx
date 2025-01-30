@@ -54,11 +54,11 @@ const Login = () => {
         toast.success("Login successful");
   
         // Store the token and role
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("role", response.data.admin.role);  // Save role in localStorage
-        localStorage.setItem("admin_id", JSON.stringify(response.data.admin.id));  // Save admin ID
+        sessionStorage.setItem("token", response.data.token);
+        sessionStorage.setItem("role", response.data.admin.role);  
+        sessionStorage.setItem("admin_id", JSON.stringify(response.data.admin.id));  // Save admin ID
         setTimeout(() => {
-          const role = localStorage.getItem("role");
+          const role = sessionStorage.getItem("role");
           if (role === "admin") {
             navigate("/admin");  // Admin should be redirected to /admin
           } else {

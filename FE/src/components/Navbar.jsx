@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Navbar = ({ userId = 'Guest', walletAmount = 0 }) => {
+const Navbar = ({ userId, walletAmount }) => {
   return (
     <nav className="bg-black p-1.5 w-full flex justify-between items-center text-white">
       {/* Left Section */}

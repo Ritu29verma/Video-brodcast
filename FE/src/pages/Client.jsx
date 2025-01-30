@@ -1,14 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect} from 'react';
 import VideoPlayer from '../components/VideoPlayer'; 
 import Navbar from '../components/Navbar';
 import BettingGame from '../components/BetPanel';
 
 const Client = () => {
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [userName, setUserName] = useState("Guest");
+  const [walletAmount, setWalletAmount] = useState(0);
+
+  useEffect(() => {
+    const storedName = sessionStorage.getItem("name");
+    const storedWallet = sessionStorage.getItem("wallet");
+
+    if (storedName) setUserName(storedName);
+    if (storedWallet) setWalletAmount(parseFloat(storedWallet));
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-      <Navbar />
+      <Navbar userId={userName} walletAmount={walletAmount} />
 
       {!hasInteracted && (
         <div

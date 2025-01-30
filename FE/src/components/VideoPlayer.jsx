@@ -5,27 +5,19 @@ const Client = () => {
   const videoRef = useRef(null);
   const [videoUrl, setVideoUrl] = useState(null);
   const [hasInteracted, setHasInteracted] = useState(false); 
-  const [adminState, setAdminState] = useState({
-    url: null,
-    currentTime: 0,
-    isMuted: false,
-    isPlaying: false
-  }); 
   const [videoState, setVideoState] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [videoList, setVideoList] = useState([]);
   const [showOverlay, setShowOverlay] = useState(false);
   const [currentMultiplier, setCurrentMultiplier] = useState(1);
-  const [coinReach, setCoinReach] = useState(0);
   
    const fetchVideoList = async () => {
       try {
         const response = await fetch(`${import.meta.env.VITE_BASE_URL}/videos-list`);
         const data = await response.json();
-        return data.videos; // Return the video list instead of setting state
+        return data.videos;
       } catch (error) {
         console.error("Error fetching videos:", error);
-        return []; // Return an empty array on error
+        return [];
       }
     };
     
@@ -33,38 +25,12 @@ const Client = () => {
       const loadVideos = async () => {
         const videos = await fetchVideoList();
         setVideoList(videos);
-        console.log(videoList); // Log the fetched videos
+        console.log(videoList);
       };
     
       loadVideos();
     }, []);
-    
 
-  useEffect(() => {
-    socket.on('admin_logout', () => {
-      console.log('Admin has logged out, resetting video state');
-      setVideoUrl(null);
-      setIsPlaying(false);
-      setAdminState({
-        url: null,
-        currentTime: 0,
-        isMuted: false,
-        isPlaying: false,
-        action: []
-      });
-  
-      const videoElement = videoRef.current;
-      if (videoElement) {
-        videoElement.pause();
-        videoElement.src = '';
-        videoElement.currentTime = 0;
-      }
-    });
-  
-    return () => {
-      socket.off('admin_logout');
-    };
-  }, []);
 
   useEffect(() => {
     socket.on('stop_video_loop', () => {
@@ -80,32 +46,10 @@ const Client = () => {
     };
   }, []);
   
-  useEffect(() => {
-    socket.on('admin_reset_state', (resetState) => {
-      console.log('Received reset state from admin:', resetState);
-  
-      // Reset the video state on client-side
-      setVideoState(resetState);
-      setIsPlaying(resetState.isPlaying);
-      setAdminState(resetState);
-  
-      const videoElement = videoRef.current;
-      if (videoElement) {
-        videoElement.pause();
-        videoElement.src = '';
-        videoElement.currentTime = 0;
-      }
-    });
-  
-    return () => {
-      socket.off('admin_reset_state');
-    };
-  }, []);
   
   // Listen for real-time updates from the admin
   useEffect(() => {
     socket.on('admin_control', (state) => {
-      // console.log('Real-time state update from admin:', state);
       setVideoState(state);
   
       const videoElement = videoRef.current;
@@ -141,7 +85,7 @@ const Client = () => {
 // Overlay and coin multiplier
 useEffect(() => {
   
-  socket.on('set_coin_reach', (value) => setCoinReach(value));
+
   socket.on("update_multiplier", (multiplier) => {
     console.log("Multiplier updated:", multiplier);
     setCurrentMultiplier(multiplier); 
@@ -193,7 +137,6 @@ useEffect(() => {
       // Request the latest admin state upon interaction
       socket.emit('fetch_current_state', {} , (state) => {
         console.log('Fetched current state from admin:', state);
-        setAdminState(state);
         setShowOverlay(prevState => {
           const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/${videoList[1]}`;
           console.log("Updated showOverlay:", newState);
@@ -224,17 +167,13 @@ useEffect(() => {
     const videoElement = videoRef.current;
     if (videoState && videoElement) {
       const { url, isPlaying, currentTime, isMuted } = videoState;
-
       // Update video source
       if (videoElement.src !== url) {
         videoElement.src = url;
         videoElement.load();
       }
-
-      // Sync playback position
       const clientTime = videoElement.currentTime;
       const drift = currentTime - clientTime;
-
       if (Math.abs(drift) > 0.5) {
         // Large drift: Seek to the correct position
         videoElement.currentTime = currentTime;
@@ -242,24 +181,20 @@ useEffect(() => {
         // Small drift: Adjust playback speed
         videoElement.playbackRate = drift > 0 ? 1.05 : 0.95;
       }
-
       // Sync play/pause state
       if (isPlaying) {
         videoElement.play();
       } else {
         videoElement.pause();
       }
-
       // Sync mute state
       videoElement.muted = isMuted;
     }
   }, [videoState]);
 
   useEffect(() => {
-    // Listen for initial stream state for new clients
     socket.on('start_stream', (state) => {
       console.log('Received initial state:', state);
-      setAdminState(state);
       setShowOverlay(prevState => {
         const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/${videoList[1]}`;
         console.log("Updated showOverlay:", newState);
@@ -288,9 +223,6 @@ useEffect(() => {
 
     return () => {
       socket.off('start_stream');
-      socket.off('play');
-      socket.off('pause');
-      socket.off('restart');
       window.removeEventListener('click', handleUserInteraction);
       window.removeEventListener('keydown', handleUserInteraction);
     };

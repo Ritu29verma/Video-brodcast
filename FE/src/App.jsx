@@ -13,6 +13,7 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/homepage" element={<PrivateRoute role="client"><Client /></PrivateRoute>}  />
+        <Route path="/" element={<PrivateRoute><Client /></PrivateRoute>}  />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login-client" element={<LoginUser />} />
