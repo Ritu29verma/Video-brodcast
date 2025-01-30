@@ -7,7 +7,7 @@ import Register from './pages/Register';
 import LoginUser from "./pages/LoginUser"
 import PrivateRoute from './pages/PrivateRoute';
 import GameResults from './components/GameResults';
-
+import { ToastContainer,toast } from 'react-toastify'; 
 const App = () => {
   return (
     <Router>
@@ -21,7 +21,9 @@ const App = () => {
 
          {/* Private route for Admin */}
          <Route path="/admin" element={<PrivateRoute role="admin"><Admin/></PrivateRoute>} />
-      </Routes>
+         </Routes>
+         <ToastContainer autoClose={600} />
+      
 
       
     </Router>

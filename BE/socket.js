@@ -5,7 +5,7 @@ let finalCoinList = [];
 let multiplier = 1.0; 
 let multiplierInterval = null;
 let io; 
-
+let activeBets = {}; 
 let adminLoggedOut = true;
 let videoState = {
   url: null,
@@ -95,6 +95,9 @@ module.exports = (server) => {
   socket.on('video_change', (state) => {
     videoState = { ...state, currentTime: 0 };
     console.log('Admin changed video:', videoState.url);
+    if ((state.url)===`${process.env.BASE_URL}/videos/video3.mp4`){
+      activeBets = {}; 
+    }
     io.emit('video_change', videoState);
   });
 
@@ -107,33 +110,52 @@ module.exports = (server) => {
   socket.emit('start_stream', videoState);
 
    // Admin updates the video state
-    socket.on('admin_control', (state) => {
+  socket.on('admin_control', (state) => {
       currentVideoState = state; // Update the state globally
       // console.log('Admin updated video state:', state);
       socket.broadcast.emit('admin_control', state);
-    });
+  });
 
-    socket.on('admin_video_state', (videoState) => {
+  socket.on('admin_video_state', (videoState) => {
         console.log('Admin sent video state:', videoState);
         socket.emit('video_state_update', videoState);
-      });
+  });
 
-
-    // Emit the current state depending on whether the admin is logged out
     socket.on('fetch_current_state', (callback) => {
-    const state = adminLoggedOut
-      ? {
-          url: null,
-          currentTime: 0,
-          isMuted: false,
-          isPlaying: false,
-          action: [],
-        }
-      : videoState;
-    console.log(`Providing ${adminLoggedOut ? 'default' : 'current admin'} state.`);
+    const state = videoState;
+    console.log(`Providing 'current admin' state.`);
     socket.emit('fetch_current_state', state);
     });
+    
+
+  socket.on("placeBet", ({ clientCode, betAmount }) => {
+    if (!clientCode || !betAmount) return;
+    const now = new Date().toISOString(); // Get current timestamp
+    const bet = { code: clientCode, amount: betAmount, timestamp: now };
+    if (!activeBets[clientCode]) {
+      activeBets[clientCode] = [];
+    }
+
+    if (activeBets[clientCode].length < 2) {
+      activeBets[clientCode].push(bet);
+      console.log(`Bet placed by ${clientCode}: $${betAmount} at ${now}`);
+    }
+
+  });
+
+  socket.on("cancelBet", ({ clientCode, betAmount }) => {
+    if (!clientCode || !betAmount) return;
   
+    if (activeBets[clientCode]) {
+      // Find the bet and remove it
+      activeBets[clientCode] = activeBets[clientCode].filter(
+        (bet) => bet.amount !== betAmount);
+
+      console.log(`Bet cancelled for ${clientCode}: $${betAmount}`);
+
+    }
+  });
+
     socket.on('disconnect', () => {
       console.log('User disconnected:', socket.id);
     });
