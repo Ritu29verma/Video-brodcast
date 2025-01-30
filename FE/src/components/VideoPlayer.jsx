@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import socket from "../components/socket";
 
-const Client = () => {
+const VideoPlayer = () => {
   const videoRef = useRef(null);
   const [videoUrl, setVideoUrl] = useState(null);
   const [hasInteracted, setHasInteracted] = useState(false); 
@@ -9,6 +9,7 @@ const Client = () => {
   const [videoList, setVideoList] = useState([]);
   const [showOverlay, setShowOverlay] = useState(false);
   const [currentMultiplier, setCurrentMultiplier] = useState(1);
+  const [loading, setLoading] = useState(true);
   
    const fetchVideoList = async () => {
       try {
@@ -39,6 +40,7 @@ const Client = () => {
         videoElement.pause();
         videoElement.src = ''; 
         videoElement.currentTime = 0; 
+        setLoading(true);
       }
     });
     return () => {
@@ -51,30 +53,31 @@ const Client = () => {
   useEffect(() => {
     socket.on('admin_control', (state) => {
       setVideoState(state);
-  
       const videoElement = videoRef.current;
 
       if (videoElement && state.url) {
         if (videoElement.src !== state.url) {
+          setLoading(true);
           videoElement.src = state.url;
           videoElement.currentTime = state.currentTime || 0;
           videoElement.load();
   
           videoElement.onloadeddata = () => {
+            setLoading(false); 
             if (state.isPlaying) {
               videoElement
                 .play()
                 .catch((err) => console.error('Error playing video:', err));
             }
           };
-        } else if (state.isPlaying) {
-          videoElement.play().catch((err) => console.error('Error playing video:', err));
-        } else {
+        } 
+        else {
           videoElement.pause();
         }
   
         videoElement.muted = state.isMuted || false;
       }
+      setShowOverlay(state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`);
     });
   
     return () => socket.off('admin_control');
@@ -84,15 +87,11 @@ const Client = () => {
 
 // Overlay and coin multiplier
 useEffect(() => {
-  
-
   socket.on("update_multiplier", (multiplier) => {
     console.log("Multiplier updated:", multiplier);
-    setCurrentMultiplier(multiplier); 
-
+    setCurrentMultiplier(multiplier);
   });
   return () => {
-    socket.off('set_coin_reach');
     socket.off('update_multiplier');
   };
 }, []);
@@ -104,7 +103,7 @@ useEffect(() => {
     console.log('Current video list:', videoList);
     console.log('State URL:', state.url);
     setShowOverlay(prevState => {
-      const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/${videoList[1]}`;
+      const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`;
       console.log("Updated showOverlay:", newState);
       return newState;
   });
@@ -138,7 +137,7 @@ useEffect(() => {
       socket.emit('fetch_current_state', {} , (state) => {
         console.log('Fetched current state from admin:', state);
         setShowOverlay(prevState => {
-          const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/${videoList[1]}`;
+          const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`;
           console.log("Updated showOverlay:", newState);
           return newState;
       });
@@ -196,7 +195,7 @@ useEffect(() => {
     socket.on('start_stream', (state) => {
       console.log('Received initial state:', state);
       setShowOverlay(prevState => {
-        const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/${videoList[1]}`;
+        const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`;
         console.log("Updated showOverlay:", newState);
         return newState;
     });
@@ -204,10 +203,10 @@ useEffect(() => {
       if (state.url) {
         setVideoUrl(state.url);
         setShowOverlay(prevState => {
-          const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/${videoList[1]}`;
+          const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`;
           console.log("Updated showOverlay:", newState);
           return newState;
-      });
+        });
         if (videoElement) {
           videoElement.src = state.url;
           videoElement.currentTime = state.currentTime || 0;
@@ -215,9 +214,6 @@ useEffect(() => {
         }
       }
     });
-
-
-    // Attach event listeners for interaction
     window.addEventListener('click', handleUserInteraction);
     window.addEventListener('keydown', handleUserInteraction);
 
@@ -239,14 +235,18 @@ useEffect(() => {
       autoPlay
       muted
     />
-    {showOverlay && (
-            <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
-              <span className="text-white font-bold text-5xl">{currentMultiplier.toFixed(1)}x</span>
-            </div>
-          )}
+    {loading && (
+          <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
+            <span className="text-white font-bold text-2xl">Loading...</span>
+          </div>
+        )}
+        {!loading && showOverlay && (
+          <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
+            <span className="text-white font-bold text-5xl">{currentMultiplier.toFixed(1)}x</span>
+          </div>
+        )}
    </div>
         </div>
   );
 };
-
-export default Client;
+export default VideoPlayer;
