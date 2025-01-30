@@ -4,7 +4,6 @@ let coinList = [];
 let finalCoinList = [];
 let multiplier = 1.0; 
 let multiplierInterval = null;
-
 let io; 
 
 let adminLoggedOut = true;
@@ -28,7 +27,7 @@ module.exports = (server) => {
 
   io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
-
+    
   socket.on("setvalue", (value) => {
     if (value && !isNaN(value)) {
       coinReach = Number(value); 

@@ -11,6 +11,7 @@ const Admin = () => {
     sessionStorage.removeItem("token");
     sessionStorage.removeItem("role")
     navigate("/login");
+    socket.emit('admin_logout');
   };
 
   return (

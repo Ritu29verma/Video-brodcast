@@ -2,6 +2,7 @@ import React, { useState,useEffect} from 'react';
 import VideoPlayer from '../components/VideoPlayer'; 
 import Navbar from '../components/Navbar';
 import BettingGame from '../components/BetPanel';
+import TabSection from '../components/TabSection';
 
 const Client = () => {
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -42,7 +43,7 @@ const Client = () => {
         </div>
 
         {/* Betting Section */}
-        <div className="w-full lg:w-1/3 bg-gray-800 rounded-md shadow-lg p-4 h-auto lg:h-screen">
+        {/* <div className="w-full lg:w-1/3 bg-gray-800 rounded-md shadow-lg p-4 h-auto lg:h-screen">
           <div className="flex justify-between border-b pb-2 border-gray-700">
             <button className="text-white font-semibold">All Bets</button>
             <button className="text-yellow-400 font-semibold border-b-2 border-yellow-400">
@@ -68,9 +69,11 @@ const Client = () => {
               </div>
             ))}
           </div>
-        </div>
-
-      </div>
+        </div> */}
+        
+        <TabSection/>
+        
+      </div> 
     </div>
   );
 };

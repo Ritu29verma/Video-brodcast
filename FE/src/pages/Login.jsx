@@ -5,6 +5,7 @@ import { ToastContainer,toast } from 'react-toastify';
 import axios from 'axios';
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
+import socket from '../components/socket';
 
 const Login = () => {
   const [phoneNo, setPhoneNo] = useState('');
@@ -70,6 +71,7 @@ const Login = () => {
       console.error("Error during login:", error);
       toast.error("Login failed. Please try again.");
     }
+    socket.emit('admin_login');
   };  
   
   const togglePasswordVisibility = () => {
