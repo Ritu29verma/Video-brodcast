@@ -11,7 +11,7 @@ const adminRoutes = require('./routes/adminroutes');
 const userRoutes = require('./routes/clientroutes');
 const gameRoutes = require('./routes/gameroutes');
 const sequelize = require('./models/sequelize');
-
+const launchPuppeteer = require('./controllers/puppeteerAdmin')
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
@@ -62,8 +62,10 @@ const initializeApp = async () => {
   app.use('/api/client', userRoutes);
   app.use('/api/game', gameRoutes);
   socketHandler(server);
-  server.listen(PORT, () => {
+
+  server.listen(PORT, async () => {
     console.log(`Server is running on ${PORT}`);
+    await launchPuppeteer();    
   });
 };
 

@@ -3,25 +3,32 @@ const sequelize = require('./sequelize');
 
 const Game = sequelize.define('Game', {
   gameId: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.BIGINT, // Using BIGINT for numeric UUID-like game ID
     primaryKey: true,
-    autoIncrement: true,
+    allowNull: false,
   },
   coinReach: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
+    defaultValue: 0.0,
   },
-  createdAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
+  totalInGame: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0.0,
   },
-  updatedAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-    onUpdate: DataTypes.NOW,
+  cashout: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0.0,
+  },
+  profitLoss: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0.0,
   },
 }, {
-  timestamps: true, // Enables automatic createdAt and updatedAt fields
+  timestamps: true, // Automatically adds createdAt and updatedAt
   tableName: 'games_aviator',
 });
 

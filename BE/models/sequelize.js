@@ -1,6 +1,6 @@
 // models/sequelize.js
 const { Sequelize } = require('sequelize');
-
+require('dotenv').config(); 
 // Initialize Sequelize with database credentials
 const sequelize = new Sequelize(process.env.MYSQL_DB, process.env.MYSQL_USER, process.env.MYSQL_PASSWORD, {
   host:  process.env.MYSQL_HOST,

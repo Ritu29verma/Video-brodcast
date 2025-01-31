@@ -14,10 +14,10 @@ const PrivateRoute = ({ children }) => {
     }
     if (role === "client") {
       navigate("/homepage");  
-    } else if (role === "admin") {
-      navigate("/admin");  
+    // } else if (role === "admin") {
+    //   navigate("/main");  
     } else {
-      navigate("/unauthorized");
+      navigate("/main");
     }
 
     setLoading(false);

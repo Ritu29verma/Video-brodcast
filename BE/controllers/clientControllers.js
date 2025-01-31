@@ -1,4 +1,3 @@
-const Admin = require("../models/Admin")
 const jwt = require('jsonwebtoken');
 
 exports.checkClient = async (req, res) => {

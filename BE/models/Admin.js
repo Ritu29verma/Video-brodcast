@@ -10,7 +10,6 @@ const Admin = sequelize.define('Admin', {
   phoneNo: {
     type: DataTypes.STRING(15),
     allowNull: false,
-    unique: true,
   },
   countryCode: {
     type: DataTypes.STRING(5),

@@ -61,9 +61,9 @@ const Login = () => {
         setTimeout(() => {
           const role = sessionStorage.getItem("role");
           if (role === "admin") {
-            navigate("/admin");  // Admin should be redirected to /admin
+            navigate("/main");  
           } else {
-            navigate("/unauthorized");  // Otherwise go to unauthorized
+            navigate("/unauthorized");  
           }
         }, 1500);
       }

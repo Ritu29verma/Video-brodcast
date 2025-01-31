@@ -8,6 +8,7 @@ import LoginUser from "./pages/LoginUser"
 import PrivateRoute from './pages/PrivateRoute';
 import GameResults from './components/GameResults';
 import { ToastContainer,toast } from 'react-toastify'; 
+import FinalAdmin from './pages/FinalAdmin';
 const App = () => {
   return (
     <Router>
@@ -19,8 +20,8 @@ const App = () => {
         <Route path="/login-client" element={<LoginUser />} />
         <Route path="/game" element={<GameResults/>} />
 
-         {/* Private route for Admin */}
-         <Route path="/admin" element={<PrivateRoute role="admin"><Admin/></PrivateRoute>} />
+        <Route path="/admin" element={<Admin/>} />
+        <Route path="/main" element={<PrivateRoute ><FinalAdmin/></PrivateRoute>} />
          </Routes>
          <ToastContainer autoClose={600} />
       

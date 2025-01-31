@@ -1,13 +1,14 @@
 const socketIo = require('socket.io');
 const dotenv = require("dotenv");
-
+// const { v4: uuidv4 } = require('uuid');
+const Game = require('./models/Game');
+let tempGameData = null;
 let stats = {
   totalProfit: 0,
   activeBetsTotal: 0,
 };
 
-let coinList = [];
-let finalCoinList = [];
+let coinReach = null;
 let multiplier = 1.0;
 let multiplierInterval = null;
 let io;
@@ -19,7 +20,9 @@ let videoState = {
   isMuted: false,
 };
 
-
+const generateNumericGameId = () => {
+  return Math.floor(100000 + Math.random() * 900000); // 6-digit unique ID
+};
 
 module.exports = (server) => {
    io = socketIo(server, {
@@ -37,44 +40,31 @@ module.exports = (server) => {
     if (value && !isNaN(value)) {
       coinReach = Number(value); 
       console.log("CoinReach manually set to:", coinReach);
-      if (coinReach === multiplier) {
-        coinList.push(coinReach); 
-        console.log("CoinReach matches multiplier:", multiplier);
-        io.emit("play_3rd_video");
-        io.emit("update_coinList", coinList);
-      }
     }
   });
 
   socket.on("flyaway", () => {
     console.log("Fly Away clicked");
-
+    coinReach = multiplier;
     if (multiplierInterval) {
       clearInterval(multiplierInterval);
       multiplierInterval = null;
     }
-    coinList.push(multiplier); 
-    console.log("CoinReach added by Fly Away:", multiplier);
-    io.emit("update_coinList", coinList); 
-    io.emit("play_3rd_video"); 
-  });
+    console.log("CoinReach set by Fly Away:", coinReach);
+    io.emit("play_3rd_video");
+});
 
   socket.on("start_multiplier", () => {
     if (multiplierInterval) {
       clearInterval(multiplierInterval);
     }
-
     multiplier = 1.0;
-
     multiplierInterval = setInterval(() => {
       multiplier = parseFloat((multiplier + 0.1).toFixed(1));
       io.emit("update_multiplier", multiplier); 
         if (coinReach !== null && coinReach === multiplier) {
-          coinList.push(coinReach); 
-          console.log("Multiplier reached CoinReach value:", multiplier);
+          console.log("Multiplier reached CoinReach value:", coinReach);
           io.emit("play_3rd_video"); 
-          io.emit("update_coinList", coinList);
-          coinReach = null; 
         }
     }, 150);
   });
@@ -85,23 +75,43 @@ module.exports = (server) => {
       clearInterval(multiplierInterval);
       multiplierInterval = null;
     }
-
     multiplier = 1.0; 
-    finalCoinList = [...finalCoinList, ...coinList];
-    console.log("Final coinList:", finalCoinList);
-    coinList = []; 
     coinReach = null; 
     console.log("Game reset for 1st video.");
-    io.emit("update_coinList", coinList); 
     io.emit("update_multiplier", multiplier); 
   });
 
 
-  socket.on('video_change', (state) => {
+  socket.on('video_change', async (state) => {
     videoState = { ...state, currentTime: 0 };
     console.log('Admin changed video:', videoState.url);
-    if ((state.url)===`${process.env.BASE_URL}/videos/video3.mp4`){
-      activeBets = {}; 
+    if (state.url === `${process.env.BASE_URL}/videos/Begin.mp4`){
+      tempGameData = {
+      gameId: generateNumericGameId(),
+      coinReach: null ,
+      totalInGame: 0,
+      cashout: 0,
+      profitLoss: 0
+       };
+    }
+    if (state.url === `${process.env.BASE_URL}/videos/video3.mp4`) {
+      if (tempGameData) {
+        tempGameData.coinReach = coinReach;
+        try {
+          await Game.create(tempGameData);
+          io.emit('gameData', tempGameData);
+          console.log(`Game recorded: ${JSON.stringify(tempGameData)}`);
+        } catch (error) {
+          console.error("Error saving game data:", error);
+        }
+      }
+      tempGameData = null;
+      activeBets = {};
+      coinReach = null;
+      if (multiplierInterval) {
+        clearInterval(multiplierInterval);
+        multiplierInterval = null;
+      }
     }
     io.emit('video_change', videoState);
   });
@@ -141,21 +151,20 @@ module.exports = (server) => {
       });
       const data = await response.json();
       if (response.status === 200) {
-        const now = new Date().toISOString();
-        const bet = { code: clientCode, amount: betAmount, timestamp: now };
+        if (!tempGameData) return;
+        if (!tempGameData.totalInGame) tempGameData.totalInGame = 0;
+        tempGameData.totalInGame += betAmount;
+        const bet = { code: clientCode, amount: betAmount, cashout:0};
         if (!activeBets[clientCode]) {
           activeBets[clientCode] = [];
         }
         if (activeBets[clientCode].length < 2) {
           activeBets[clientCode].push(bet);
           stats.activeBetsTotal += betAmount;
-          console.log(`Bet placed by ${clientCode}: $${betAmount} at ${now} ${data.newWalletBalance}`);
           socket.emit("walletUpdated", {WalletBalance: data.newWalletBalance});
-        } 
-      }    
+        }}    
     } catch (error) {
-      console.error("Error placing bet:", error);
-    }
+      console.error("Error placing bet:", error);}
   });
 
   socket.on("cancelBet", async ({ clientCode, betAmount }) => {
@@ -174,8 +183,8 @@ module.exports = (server) => {
         console.error("Error processing bet refund:", data.error);
         return;
       }
-  
-      console.log(`New Wallet Balance $${data.newWalletBalance}`);
+      if (!tempGameData) return;
+      tempGameData.totalInGame -= betAmount;
       socket.emit("walletUpdated", {WalletBalance: data.newWalletBalance});
     } catch (error) {
       console.error("Error refunding bet:", error);
@@ -189,7 +198,6 @@ module.exports = (server) => {
       console.log(`Bet cancelled for ${clientCode}: $${betAmount}`);
     }
   });
-  
 
 
   socket.on("cashout", async ({ clientCode, userBet, cashoutAmount }) => {
@@ -203,6 +211,10 @@ module.exports = (server) => {
 
       const data = await response.json();
       if (response.status === 200) {
+        if (!tempGameData) return; // Ensure a game is active
+
+        tempGameData.cashout += cashoutAmount; // Update cashout amount
+        tempGameData.profitLoss = tempGameData.totalInGame - tempGameData.cashout; 
         if (activeBets[clientCode]) {
           activeBets[clientCode] = activeBets[clientCode].filter(
             (bet) => bet.amount !== userBet
