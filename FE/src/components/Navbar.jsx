@@ -1,12 +1,64 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaBars, FaTimes, FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
+import socket from "../components/socket";
+import axios from 'axios';
 
-const Navbar = ({ userId , walletAmount }) => {
+const Navbar = ({ userId  }) => {
   const [isMuted, setIsMuted] = useState(true); // Mute state
   const [isMenuOpen, setIsMenuOpen] = useState(false); // Dropdown state
   const videoRef = useRef(null); // Video reference
+  const [walletAmount, setWalletAmount] = useState(0);
 
-  // Toggle mute/unmute
+  const fetchWalletAmount = async () => {
+    try {
+      const clientCode = sessionStorage.getItem("client_code");
+      if (!clientCode) return null;
+
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/api/client/get-wallet-amount`,
+        { params: { clientCode } }
+      );
+
+      const walletAmount = response.data.wallet_amount;
+
+      // Store in sessionStorage
+      sessionStorage.setItem("wallet", walletAmount);
+      return walletAmount;
+    } catch (error) {
+      console.error("Error fetching wallet amount:", error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    // Fetch wallet amount once when the page loads
+    const loadWalletAmount = async () => {
+      const storedWallet = sessionStorage.getItem("wallet");
+
+      if (storedWallet) {
+        setWalletAmount(parseFloat(storedWallet));
+      } else {
+        const initialWallet = await fetchWalletAmount();
+        if (initialWallet !== null) {
+          setWalletAmount(initialWallet);
+        }
+      }
+    };
+
+    loadWalletAmount();
+
+    // Listen for WebSocket wallet updates
+    socket.on("walletUpdated", async ({ WalletBalance }) => {
+      sessionStorage.setItem("wallet", WalletBalance);
+      loadWalletAmount();
+    });
+
+    return () => {
+      socket.off("walletUpdated");
+    };
+  }, []);
+
+
   const toggleMute = () => {
     setIsMuted(prev => !prev);
   };
@@ -17,6 +69,16 @@ const Navbar = ({ userId , walletAmount }) => {
       videoRef.current.muted = isMuted;
     }
   }, [isMuted]);
+
+  useEffect(() => {
+    socket.on("walletUpdated", ({ WalletBalance}) => {
+        setWalletAmount(WalletBalance);
+    });
+
+    return () => {
+      socket.off("walletUpdated");
+    };
+  }, [setWalletAmount]);
 
   return (
     <nav className="bg-black p-3 w-full flex justify-between items-center text-white">
@@ -31,7 +93,9 @@ const Navbar = ({ userId , walletAmount }) => {
       {/* Right Section */}
       <div className="flex items-center space-x-4">
         <span className="text-gray-400">User : {userId}</span>
-        <span className="text-green-400">Wallet: Rs.{walletAmount.toFixed(2)}</span>
+        <span className="text-green-400">
+          Wallet: Rs.{walletAmount}
+        </span>
 
         {/* Mute/Unmute Button (Desktop) */}
         <button

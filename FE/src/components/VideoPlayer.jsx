@@ -26,7 +26,6 @@ const VideoPlayer = () => {
       const loadVideos = async () => {
         const videos = await fetchVideoList();
         setVideoList(videos);
-        console.log(videoList);
       };
     
       loadVideos();
@@ -88,7 +87,6 @@ const VideoPlayer = () => {
 // Overlay and coin multiplier
 useEffect(() => {
   socket.on("update_multiplier", (multiplier) => {
-    console.log("Multiplier updated:", multiplier);
     setCurrentMultiplier(multiplier);
   });
   return () => {
@@ -99,12 +97,9 @@ useEffect(() => {
 //  Listen for real-time updates from the admin
  useEffect(() => {
   socket.on('video_change', (state) => {
-    console.log('Received video switch from admin:', state);
-    console.log('Current video list:', videoList);
-    console.log('State URL:', state.url);
+
     setShowOverlay(prevState => {
       const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`;
-      console.log("Updated showOverlay:", newState);
       return newState;
   });
     setVideoUrl(state.url);
@@ -138,7 +133,7 @@ useEffect(() => {
         console.log('Fetched current state from admin:', state);
         setShowOverlay(prevState => {
           const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`;
-          console.log("Updated showOverlay:", newState);
+          
           return newState;
       });
 
@@ -196,7 +191,6 @@ useEffect(() => {
       console.log('Received initial state:', state);
       setShowOverlay(prevState => {
         const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`;
-        console.log("Updated showOverlay:", newState);
         return newState;
     });
       const videoElement = videoRef.current;
@@ -204,7 +198,6 @@ useEffect(() => {
         setVideoUrl(state.url);
         setShowOverlay(prevState => {
           const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`;
-          console.log("Updated showOverlay:", newState);
           return newState;
         });
         if (videoElement) {

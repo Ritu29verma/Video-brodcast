@@ -8,7 +8,6 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
   const [activeTab, setActiveTab] = useState("bet");
   const [userBet, setUserBet] = useState(null); 
   const [waitingForNextRound, setWaitingForNextRound] = useState(false);
-  const [cashoutAmount, setCashoutAmount] = useState(null);
 
   const betOptions = [1, 2, 5, 10];
 
@@ -22,7 +21,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
     if (isFirstVideoPlaying) {
       setUserBet(betAmount);
       setWaitingForNextRound(false);
-      toast.info(`Bet sent to socket $${userBet}`);
+      // toast.info(`Bet sent to socket $${userBet}`);
       socket.emit("placeBet", { clientCode, betAmount });
     } else if (isSecondVideoPlaying && userBet === null) {
       setUserBet(betAmount);
@@ -36,24 +35,25 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
   const handleCancelBet = () => {
     setUserBet(null);
     setWaitingForNextRound(false);
-    toast.info("Bet cancelled");
+    // toast.info("Bet cancelled");
   };
 
   const handleSocketCancelBet =()=>{
     const clientCode = sessionStorage.getItem("client_code"); // Retrieve client code from session storage
     socket.emit("cancelBet", { clientCode, betAmount: userBet });
 
-    toast.info(`Cancelling bet $${userBet}`);
+    // toast.info(`Cancelling bet $${userBet}`);
     setUserBet(null);
     setWaitingForNextRound(false);
   };
 
   const handleCashout = () => {
     if (userBet !== null) {
-      const amount = userBet * currentMultiplier; // Capture exact amount at the moment
-      setCashoutAmount(amount); // Store it in state
-      setUserBet(null); // Reset user bet after cashout
-      toast.info(`Bet cashed out: $${amount.toFixed(2)} USD`);
+      const clientCode = sessionStorage.getItem("client_code");
+      const cashoutAmount = userBet * currentMultiplier;
+      socket.emit("cashout", { clientCode, userBet, cashoutAmount });
+      setUserBet(null);
+      toast.info(`Bet cashed out: $${cashoutAmount.toFixed(2)} USD`);
     }
   };
 
@@ -169,7 +169,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
         {isSecondVideoPlaying && userBet !== null && !waitingForNextRound && (
           <button className="w-full py-3 bg-yellow-500 text-white font-bold text-lg rounded-lg hover:bg-yellow-600"
           onClick={handleCashout}>
-            CASHOUT ${userBet * currentMultiplier} USD
+            CASHOUT ${(userBet * currentMultiplier).toFixed(2)} USD
           </button>
         )}
 

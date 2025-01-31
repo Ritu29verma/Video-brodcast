@@ -1,12 +1,17 @@
 const socketIo = require('socket.io');
 const dotenv = require("dotenv");
-let coinList = []; 
+
+let stats = {
+  totalProfit: 0,
+  activeBetsTotal: 0,
+};
+
+let coinList = [];
 let finalCoinList = [];
-let multiplier = 1.0; 
+let multiplier = 1.0;
 let multiplierInterval = null;
-let io; 
-let activeBets = {}; 
-let adminLoggedOut = true;
+let io;
+let activeBets = {};
 let videoState = {
   url: null,
   isPlaying: false,
@@ -27,7 +32,7 @@ module.exports = (server) => {
 
   io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
-    
+
   socket.on("setvalue", (value) => {
     if (value && !isNaN(value)) {
       coinReach = Number(value); 
@@ -109,10 +114,8 @@ module.exports = (server) => {
 
   socket.emit('start_stream', videoState);
 
-   // Admin updates the video state
   socket.on('admin_control', (state) => {
-      currentVideoState = state; // Update the state globally
-      // console.log('Admin updated video state:', state);
+      currentVideoState = state;
       socket.broadcast.emit('admin_control', state);
   });
 
@@ -121,26 +124,38 @@ module.exports = (server) => {
         socket.emit('video_state_update', videoState);
   });
 
-    socket.on('fetch_current_state', (callback) => {
+  socket.on('fetch_current_state', (callback) => {
     const state = videoState;
     console.log(`Providing 'current admin' state.`);
     socket.emit('fetch_current_state', state);
-    });
+  });
     
 
-  socket.on("placeBet", ({ clientCode, betAmount }) => {
+  socket.on("placeBet", async ({ clientCode, betAmount }) => {
     if (!clientCode || !betAmount) return;
-    const now = new Date().toISOString(); // Get current timestamp
-    const bet = { code: clientCode, amount: betAmount, timestamp: now };
-    if (!activeBets[clientCode]) {
-      activeBets[clientCode] = [];
+    try {
+      const response = await fetch(`${process.env.BASE_URL}/api/client/deductBetAmount`,{
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientCode, betAmount }),
+      });
+      const data = await response.json();
+      if (response.status === 200) {
+        const now = new Date().toISOString();
+        const bet = { code: clientCode, amount: betAmount, timestamp: now };
+        if (!activeBets[clientCode]) {
+          activeBets[clientCode] = [];
+        }
+        if (activeBets[clientCode].length < 2) {
+          activeBets[clientCode].push(bet);
+          stats.activeBetsTotal += betAmount;
+          console.log(`Bet placed by ${clientCode}: $${betAmount} at ${now} ${data.newWalletBalance}`);
+          socket.emit("walletUpdated", {WalletBalance: data.newWalletBalance});
+        } 
+      }    
+    } catch (error) {
+      console.error("Error placing bet:", error);
     }
-
-    if (activeBets[clientCode].length < 2) {
-      activeBets[clientCode].push(bet);
-      console.log(`Bet placed by ${clientCode}: $${betAmount} at ${now}`);
-    }
-
   });
 
   socket.on("cancelBet", ({ clientCode, betAmount }) => {
@@ -153,6 +168,34 @@ module.exports = (server) => {
 
       console.log(`Bet cancelled for ${clientCode}: $${betAmount}`);
 
+    }
+  });
+
+
+  socket.on("cashout", async ({ clientCode, userBet, cashoutAmount }) => {
+    if (!clientCode || !userBet || !cashoutAmount) return; 
+    try {
+      const response = await fetch(`${process.env.BASE_URL}/api/client/cashoutWallet`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientCode, cashoutAmount }),
+      });
+
+      const data = await response.json();
+      if (response.status === 200) {
+        if (activeBets[clientCode]) {
+          activeBets[clientCode] = activeBets[clientCode].filter(
+            (bet) => bet.amount !== userBet
+          );
+        }
+        stats.totalProfit -= cashoutAmount;
+        stats.activeBetsTotal -= userBet;
+  
+        console.log(`Cashout: ${clientCode} won $${cashoutAmount} ${data.newWalletBalance}`);
+        socket.emit("walletUpdated", {WalletBalance: data.newWalletBalance});
+      } 
+    } catch (error) {
+      console.error("Error processing cashout:", error);
     }
   });
 

@@ -149,7 +149,6 @@ const VideoPlayerAdmin = () => {
 
   useEffect(() => {
     socket.on("update_multiplier", (multiplier) => {
-      console.log("Multiplier updated:", multiplier);
       setCurrentMultiplier(multiplier); 
     });
 
