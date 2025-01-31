@@ -117,6 +117,44 @@ exports.deductBetAmount = async (req, res) => {
   }
 };
 
+exports.AddBetAmount = async (req, res) => {
+  const { clientCode, betAmount } = req.body;
+
+  if (!clientCode || !betAmount) {
+    return res.status(400).json({ error: "Client code and bet amount are required" });
+  }
+
+  try {
+    // Get current wallet balance
+    const [clientData] = await req.mysqlPool.query(
+      "SELECT matkaLimit FROM client WHERE code = ?",
+      [clientCode]
+    );
+    if (clientData.length === 0) {
+      return res.status(404).json({ error: "Client not found" });
+    }
+    const currentBalance = clientData[0].matkaLimit;
+    if (currentBalance < betAmount) {
+      return res.status(400).json({ error: "Insufficient funds" });
+    }
+    await req.mysqlPool.query(
+      "UPDATE client SET matkaLimit = matkaLimit + ? WHERE code = ?",
+      [betAmount, clientCode]
+    );
+    const [updatedClientData] = await req.mysqlPool.query(
+      "SELECT matkaLimit FROM client WHERE code = ?",
+      [clientCode]
+    );
+
+    res.status(200).json({
+      newWalletBalance: updatedClientData[0].matkaLimit,
+    });
+  } catch (error) {
+    console.error("Error processing bet:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 
 exports.getWalletAmount = async (req, res) => {
   const { clientCode } = req.query;

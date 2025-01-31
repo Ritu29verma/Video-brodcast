@@ -158,18 +158,38 @@ module.exports = (server) => {
     }
   });
 
-  socket.on("cancelBet", ({ clientCode, betAmount }) => {
+  socket.on("cancelBet", async ({ clientCode, betAmount }) => {
     if (!clientCode || !betAmount) return;
   
+    try {
+      const response = await fetch(`${process.env.BASE_URL}/api/client/addBetAmount`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientCode, betAmount }),
+      });
+  
+      const data = await response.json();
+      
+      if (response.status !== 200) {
+        console.error("Error processing bet refund:", data.error);
+        return;
+      }
+  
+      console.log(`New Wallet Balance $${data.newWalletBalance}`);
+      socket.emit("walletUpdated", {WalletBalance: data.newWalletBalance});
+    } catch (error) {
+      console.error("Error refunding bet:", error);
+      return;
+    }
     if (activeBets[clientCode]) {
-      // Find the bet and remove it
+      // Remove the bet from active bets
       activeBets[clientCode] = activeBets[clientCode].filter(
-        (bet) => bet.amount !== betAmount);
-
+        (bet) => bet.amount !== betAmount
+      );
       console.log(`Bet cancelled for ${clientCode}: $${betAmount}`);
-
     }
   });
+  
 
 
   socket.on("cashout", async ({ clientCode, userBet, cashoutAmount }) => {

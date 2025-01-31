@@ -50,37 +50,37 @@ const VideoPlayer = () => {
   
   // Listen for real-time updates from the admin
   useEffect(() => {
-    socket.on('admin_control', (state) => {
+    socket.on("admin_control", (state) => {
       setVideoState(state);
       const videoElement = videoRef.current;
-
+  
       if (videoElement && state.url) {
-        if (videoElement.src !== state.url) {
+        if (videoElement.src !== state.url) {  // Prevent redundant updates
           setLoading(true);
           videoElement.src = state.url;
           videoElement.currentTime = state.currentTime || 0;
-          videoElement.load();
   
           videoElement.onloadeddata = () => {
-            setLoading(false); 
+            setLoading(false);
             if (state.isPlaying) {
-              videoElement
-                .play()
-                .catch((err) => console.error('Error playing video:', err));
+              videoElement.play().catch(err => console.error("Error playing video:", err));
             }
           };
-        } 
-        else {
+        } else if (state.isPlaying) {
+          videoElement.play().catch(err => console.error("Error resuming video:", err));
+        } else {
           videoElement.pause();
         }
   
         videoElement.muted = state.isMuted || false;
       }
+  
       setShowOverlay(state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`);
     });
   
-    return () => socket.off('admin_control');
+    return () => socket.off("admin_control");
   }, []);
+  
   
 
 
@@ -95,32 +95,27 @@ useEffect(() => {
 }, []);
 
 //  Listen for real-time updates from the admin
- useEffect(() => {
-  socket.on('video_change', (state) => {
+useEffect(() => {
+  socket.on("video_change", (state) => {
+    setShowOverlay(state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`);
 
-    setShowOverlay(prevState => {
-      const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`;
-      return newState;
-  });
-    setVideoUrl(state.url);
     const videoElement = videoRef.current;
-    if (videoElement) {
+    if (videoElement && videoElement.src !== state.url) {
       videoElement.src = state.url;
       videoElement.currentTime = state.currentTime || 0;
       videoElement.muted = state.isMuted || false;
 
       if (state.isPlaying) {
-        videoElement.play().catch((err) => console.error('Error playing video:', err));
+        videoElement.play().catch((err) => console.error("Error playing video:", err));
       } else {
         videoElement.pause();
       }
     }
   });
 
-  return () => {
-    socket.off('video_change');
-  };
-}, [videoList]);
+  return () => socket.off("video_change");
+}, []);
+
 
 
   // Handle user interaction and fetch the latest admin state
@@ -156,6 +151,25 @@ useEffect(() => {
     }
   };
 
+  const attemptPlay = () => {
+    const videoElement = videoRef.current;
+    if (videoElement) {
+      videoElement
+        .play()
+        .catch(err => console.warn("Autoplay prevented. Waiting for user interaction."));
+    }
+  };
+  
+  // Call this on user interaction
+  useEffect(() => {
+    window.addEventListener("click", attemptPlay);
+    window.addEventListener("keydown", attemptPlay);
+  
+    return () => {
+      window.removeEventListener("click", attemptPlay);
+      window.removeEventListener("keydown", attemptPlay);
+    };
+  }, []);
   // Sync video playback position with the admin's current time
   useEffect(() => {
     const videoElement = videoRef.current;
