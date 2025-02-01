@@ -51,7 +51,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
     if (userBet !== null) {
       const clientCode = sessionStorage.getItem("client_code");
       const cashoutAmount = userBet * currentMultiplier;
-      socket.emit("cashout", { clientCode, userBet, cashoutAmount });
+      socket.emit("cashout", { clientCode, userBet, cashoutAmount,currentMultiplier});
       setUserBet(null);
       toast.info(`Bet cashed out: $${cashoutAmount.toFixed(2)} USD`);
     }
@@ -88,7 +88,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
   return (
     <div className="bg-gray-800 text-white rounded-lg shadow-lg p-3 w-full mx-auto">
       {/* Tabs */}
-      <div className="flex items-center justify-between mb-2 bg-gray-900 rounded-xl">
+      {/* <div className="flex items-center justify-between mb-2 bg-gray-900 rounded-xl">
         <button
           className={`flex-1 py-2 text-center font-semibold rounded-tl-xl rounded-bl-xl ${
             activeTab === "bet"
@@ -109,7 +109,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
         >
           Auto
         </button>
-      </div>
+      </div> */}
 
 
      <div className="flex space-x-2">

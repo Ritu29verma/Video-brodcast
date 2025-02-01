@@ -10,12 +10,18 @@ const Client = () => {
 
   useEffect(() => {
     const storedName = sessionStorage.getItem("name");
+    const clientCode = sessionStorage.getItem("client_code");
+
     if (storedName) setUserName(storedName);
+
+    if (clientCode) {
+      socket.emit("registerUser", clientCode);
+    }
   }, []);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-      <Navbar userId={userName} />
+      <Navbar userId={userName}  />
 
       {!hasInteracted && (
         <div
@@ -37,7 +43,6 @@ const Client = () => {
           </div>
           <BettingGame />
         </div>
-        
         <TabSection/>
         
       </div> 

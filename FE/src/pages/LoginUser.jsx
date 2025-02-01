@@ -24,7 +24,7 @@ const LoginUser = () => {
         sessionStorage.setItem("wallet", client.wallet_amount);
         sessionStorage.setItem("role", client.role);  // Storing the role
         sessionStorage.setItem("token", token);  // Storing the token
-
+        socket.emit("registerUser", client.code);
         console.log(message);  // Optional: Log success message
         navigate("/homepage");
       } else {

@@ -1,13 +1,9 @@
 const socketIo = require('socket.io');
 const dotenv = require("dotenv");
-// const { v4: uuidv4 } = require('uuid');
 const Game = require('./models/Game');
+const UserGameResults = require('./models/UserGameResult')
 let tempGameData = null;
-let stats = {
-  totalProfit: 0,
-  activeBetsTotal: 0,
-};
-
+const userSockets = {};
 let coinReach = null;
 let multiplier = 1.0;
 let multiplierInterval = null;
@@ -34,7 +30,12 @@ module.exports = (server) => {
   });
 
   io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+  console.log('User connected:', socket.id);
+  
+  socket.on("registerUser", (clientCode) => {
+      userSockets[clientCode] = socket.id; 
+      console.log(`User registered: ${clientCode} -> ${socket.id}`);// Store socket ID for each client
+  });
 
   socket.on("setvalue", (value) => {
     if (value && !isNaN(value)) {
@@ -52,7 +53,7 @@ module.exports = (server) => {
     }
     console.log("CoinReach set by Fly Away:", coinReach);
     io.emit("play_3rd_video");
-});
+  });
 
   socket.on("start_multiplier", () => {
     if (multiplierInterval) {
@@ -93,6 +94,7 @@ module.exports = (server) => {
       cashout: 0,
       profitLoss: 0
        };
+       io.emit('gameId', tempGameData.gameId);
     }
     if (state.url === `${process.env.BASE_URL}/videos/video3.mp4`) {
       if (tempGameData) {
@@ -103,6 +105,31 @@ module.exports = (server) => {
           console.log(`Game recorded: ${JSON.stringify(tempGameData)}`);
         } catch (error) {
           console.error("Error saving game data:", error);
+        }
+      }
+      for (const clientCode in activeBets) {
+        for (const bet of activeBets[clientCode]) {
+          const gameResult = await UserGameResults.create({
+            gameId: tempGameData.gameId,
+            clientCode,
+            betAmount: bet.amount,
+            coinReach: tempGameData.coinReach ,
+            cashout: 0,
+            winLoss: "loss",
+          });
+
+          const socketId = userSockets[clientCode];
+          if (socketId) {
+            io.to(socketId).emit("gameResult", {
+              gameId: tempGameData.gameId,
+              clientCode,
+              betAmount: bet.amount,
+              coinReach: tempGameData.coinReach,
+              cashout: 0,
+              winLoss: "loss",
+              createdAt: gameResult.createdAt,
+            });
+          }
         }
       }
       tempGameData = null;
@@ -160,7 +187,6 @@ module.exports = (server) => {
         }
         if (activeBets[clientCode].length < 2) {
           activeBets[clientCode].push(bet);
-          stats.activeBetsTotal += betAmount;
           socket.emit("walletUpdated", {WalletBalance: data.newWalletBalance});
         }}    
     } catch (error) {
@@ -191,16 +217,17 @@ module.exports = (server) => {
       return;
     }
     if (activeBets[clientCode]) {
-      // Remove the bet from active bets
-      activeBets[clientCode] = activeBets[clientCode].filter(
-        (bet) => bet.amount !== betAmount
+      const betIndex = activeBets[clientCode].findIndex(
+        (bet) => bet.amount === betAmount
       );
-      console.log(`Bet cancelled for ${clientCode}: $${betAmount}`);
+      if (betIndex !== -1) {
+        activeBets[clientCode].splice(betIndex, 1); // Remove only one bet
+      }
     }
   });
 
 
-  socket.on("cashout", async ({ clientCode, userBet, cashoutAmount }) => {
+  socket.on("cashout", async ({ clientCode, userBet, cashoutAmount,currentMultiplier }) => {
     if (!clientCode || !userBet || !cashoutAmount) return; 
     try {
       const response = await fetch(`${process.env.BASE_URL}/api/client/cashoutWallet`, {
@@ -215,16 +242,35 @@ module.exports = (server) => {
 
         tempGameData.cashout += cashoutAmount; // Update cashout amount
         tempGameData.profitLoss = tempGameData.totalInGame - tempGameData.cashout; 
+        
         if (activeBets[clientCode]) {
-          activeBets[clientCode] = activeBets[clientCode].filter(
-            (bet) => bet.amount !== userBet
-          );
+          const betIndex = activeBets[clientCode].findIndex(
+            (bet) => bet.amount === userBet
+          ); 
+          if (betIndex !== -1) {
+            activeBets[clientCode].splice(betIndex, 1); // Remove only one bet
+          }
         }
-        stats.totalProfit -= cashoutAmount;
-        stats.activeBetsTotal -= userBet;
-  
         console.log(`Cashout: ${clientCode} won $${cashoutAmount} ${data.newWalletBalance}`);
         socket.emit("walletUpdated", {WalletBalance: data.newWalletBalance});
+        const gameResult = await UserGameResults.create({
+          gameId: tempGameData.gameId,
+          clientCode,
+          betAmount: userBet,
+          coinReach: currentMultiplier,
+          cashout: cashoutAmount,
+          winLoss: "win",
+        });
+
+        socket.emit("gameResult", {
+          gameId: tempGameData.gameId,
+          clientCode,
+          betAmount: userBet,
+          coinReach: currentMultiplier,
+          cashout: cashoutAmount,
+          winLoss: "win",
+          createdAt: gameResult.createdAt, // Include created date and time
+        });
       } 
     } catch (error) {
       console.error("Error processing cashout:", error);
@@ -233,6 +279,12 @@ module.exports = (server) => {
 
     socket.on('disconnect', () => {
       console.log('User disconnected:', socket.id);
+      for (const clientCode in userSockets) {
+        if (userSockets[clientCode] === socket.id) {
+          delete userSockets[clientCode]; // Remove user on disconnect
+          break;
+        }
+      }
     });
   });
   return io;
