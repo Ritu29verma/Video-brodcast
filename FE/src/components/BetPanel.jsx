@@ -53,13 +53,13 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
       const cashoutAmount = userBet * currentMultiplier;
       socket.emit("cashout", { clientCode, userBet, cashoutAmount,currentMultiplier});
       setUserBet(null);
-      toast.info(`Bet cashed out: $${cashoutAmount.toFixed(2)} USD`);
+      toast.info(`Bet cashed out: ${cashoutAmount.toFixed(2)} Rs.`);
     }
   };
 
   useEffect(() => {
     if (isFirstVideoPlaying && waitingForNextRound && userBet !== null) {
-      toast.info(`Bet auto-placed from last round: $${userBet}`);
+      toast.info(`Bet auto-placed from last round: ${userBet} Rs.`);
       const clientCode = sessionStorage.getItem("client_code");
     if (clientCode) {
       socket.emit("placeBet", { clientCode, betAmount: userBet });
@@ -87,33 +87,8 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
 
   return (
     <div className="bg-gray-800 text-white rounded-lg shadow-lg p-3 w-full mx-auto">
-      {/* Tabs */}
-      {/* <div className="flex items-center justify-between mb-2 bg-gray-900 rounded-xl">
-        <button
-          className={`flex-1 py-2 text-center font-semibold rounded-tl-xl rounded-bl-xl ${
-            activeTab === "bet"
-              ? "bg-gray-700 text-white"
-              : "bg-gray-900 text-gray-400"
-          }`}
-          onClick={() => setActiveTab("bet")}
-        >
-          Bet
-        </button>
-        <button
-          className={`flex-1 py-2 text-center font-semibold rounded-tr-xl rounded-br-xl ${
-            activeTab === "auto"
-              ? "bg-gray-700 text-white"
-              : "bg-gray-900 text-gray-400"
-          }`}
-          onClick={() => setActiveTab("auto")}
-        >
-          Auto
-        </button>
-      </div> */}
-
-
-     <div className="flex space-x-2">
-     <div>
+     <div className="flex space-x-2 bg-gray-800">
+     <div className="bg-gray-800">
         {/* Bet Adjustment Section */}
         <div className="flex items-center bg-black p-2 rounded-full justify-between mb-1">
         <button
@@ -132,7 +107,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
       </div>
       
        {/* Bet Options */}
-       <div className="grid grid-cols-2 gap-2">
+       <div className="bg-gray-800 grid grid-cols-2 gap-2">
         {betOptions.map((option) => (
           <button
             key={option}
@@ -141,7 +116,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
                 ? "bg-blue-500 text-white"
                 : "bg-gray-700 text-gray-300"
             } hover:bg-blue-400`}
-            onClick={() => setBetAmount(option)}
+            onClick={() => setBetAmount((prev) => prev * option)}
           >
             {option.toFixed(2)}
           </button>
@@ -153,8 +128,8 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
       {isFirstVideoPlaying && !waitingForNextRound && userBet == null &&( //i.e 1st vid playing and no waiting since last round
           <button className="w-full py-3 bg-green-500 text-white font-bold text-lg rounded-lg hover:bg-green-600" onClick={handlePlaceBet}>
             <div className="flex flex-col">
-              <span>BET</span>
-              <span>${betAmount.toFixed(2)} USD</span>
+              <span className="">BET</span>
+              <span>{betAmount.toFixed(2)} Rs.</span>
             </div>
           </button>
         )}
@@ -169,7 +144,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
         {isSecondVideoPlaying && userBet !== null && !waitingForNextRound && (
           <button className="w-full py-3 bg-yellow-500 text-white font-bold text-lg rounded-lg hover:bg-yellow-600"
           onClick={handleCashout}>
-            CASHOUT ${(userBet * currentMultiplier).toFixed(2)} USD
+            CASHOUT {(userBet * currentMultiplier).toFixed(2)} Rs.
           </button>
         )}
 
@@ -188,7 +163,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
           <button className="w-full py-3 bg-green-500 text-white font-bold text-lg rounded-lg hover:bg-green-600" onClick={handlePlaceBet}>
             <div className="flex flex-col">
               <span>BET</span>
-              <span>${betAmount.toFixed(2)} USD</span>
+              <span>{betAmount.toFixed(2)} Rs.</span>
             </div>
           </button>
         )}
@@ -207,7 +182,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
           <button className="w-full py-3 bg-green-500 text-white font-bold text-lg rounded-lg hover:bg-green-600" onClick={handlePlaceBet}>
             <div className="flex flex-col">
               <span>BET</span>
-              <span>${betAmount.toFixed(2)} USD</span>
+              <span>{betAmount.toFixed(2)} Rs.</span>
             </div>
           </button>
         )}
@@ -229,12 +204,12 @@ const BettingGame = () => {
   }, []);
 
   return (
-    <div className="flex flex-col md:flex-row">
-    <div className="bg-gray-900 text-white flex flex-col items-center p-6 w-full">
-    <BetButton isFirstVideoPlaying={isFirstVideoPlaying} isSecondVideoPlaying={isSecondVideoPlaying} isThirdVideoPlaying={isThirdVideoPlaying} />
+    <div className="flex flex-col md:flex-row gap-1">
+    <div className="bg-gray-900 text-white flex flex-col items-center p-1 w-full md:w-1/2">
+      <BetButton isFirstVideoPlaying={isFirstVideoPlaying} isSecondVideoPlaying={isSecondVideoPlaying} isThirdVideoPlaying={isThirdVideoPlaying} />
     </div>
-    <div className="bg-gray-900 text-white flex flex-col items-center p-6 w-full">
-    <BetButton isFirstVideoPlaying={isFirstVideoPlaying} isSecondVideoPlaying={isSecondVideoPlaying} isThirdVideoPlaying={isThirdVideoPlaying} />
+    <div className="bg-gray-900 text-white flex flex-col items-center p-1 w-full md:w-1/2">
+      <BetButton isFirstVideoPlaying={isFirstVideoPlaying} isSecondVideoPlaying={isSecondVideoPlaying} isThirdVideoPlaying={isThirdVideoPlaying} />
     </div>
   </div>
   

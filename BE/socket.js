@@ -130,6 +130,15 @@ module.exports = (server) => {
               createdAt: gameResult.createdAt,
             });
           }
+          socket.broadcast.emit("gameResultAll", {
+            gameId: tempGameData.gameId,
+            clientCode,
+            betAmount: bet.amount,
+            coinReach: tempGameData.coinReach,
+            cashout: 0,
+            winLoss: "loss",
+            createdAt: gameResult.createdAt,
+          });
         }
       }
       tempGameData = null;
@@ -270,6 +279,16 @@ module.exports = (server) => {
           cashout: cashoutAmount,
           winLoss: "win",
           createdAt: gameResult.createdAt, // Include created date and time
+        });
+
+        io.emit("gameResultAll", {
+          gameId: tempGameData.gameId,
+          clientCode,
+          betAmount: userBet,
+          coinReach: currentMultiplier,
+          cashout: cashoutAmount,
+          winLoss: "win",
+          createdAt: gameResult.createdAt,
         });
       } 
     } catch (error) {
