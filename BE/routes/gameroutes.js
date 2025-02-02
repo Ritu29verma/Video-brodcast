@@ -8,7 +8,10 @@ router.get('/get-user-gameResults', getUsergameResults);
 router.get('/get-gameRanges', getGameRanges);
 router.post('/set-gameRange',postGameRange);
 router.get("/check-gameId",checkgameId);
-router.put('/set-gameRange/:id',editgameRange);
-router.delete('/ranges/:id',deleteGameRange);
+router.put('/update-gameRange/:id',editgameRange);
+router.delete('/delete-gameRange/:id',deleteGameRange);
+
+
+
 
 module.exports = router;
