@@ -104,7 +104,7 @@ const AdminRanges = () => {
       {/* Responsive Table with Scrollbar */}
       <div className="max-h-[calc(100vh-500px)] overflow-y-auto border border-gray-600 rounded-lg scrollbar-hide">
         <table className="w-full border-collapse border border-gray-600">
-          <thead className="sticky top-0 bg-gray-800 text-gray-300 ">
+          <thead className="sticky top-0 bg-gray-800 text-gray-300 z-20">
             <tr>
               <th className="border border-gray-600 p-2">Min Total</th>
               <th className="border border-gray-600 p-2">Max Total</th>
@@ -122,16 +122,16 @@ const AdminRanges = () => {
                 <td className="border border-gray-600 p-2">{range.maxCoinReach}</td>
                 <td className="border border-gray-600 p-2 relative">
                 <button
-                    className="text-white p-2 rounded-full hover:bg-gray-600 transition"
+                    className="text-white p-2 rounded-full hover:bg-gray-600 transition z-10"
                     onClick={() => setOpenDropdown(openDropdown === index ? null : index)}
                   >
                    <IoIosArrowDropdown />
                   </button>
                   {openDropdown === index && (
-                    <div className="absolute right-0 -mt-9 bg-gray-800 rounded-md shadow-lg z-50">
-                      <ul className="text-gray-300">
+                    <div className="absolute right-0 -mt-9 bg-gray-800 rounded-md shadow-lg z-10">
+                      <ul className="text-gray-300 ">
                       <li
-                  className="hover:bg-gray-700 cursor-pointer flex items-center p-2"
+                  className="hover:bg-gray-700 cursor-pointer flex items-center p-2 "
                onClick={() => handleEditClick(range)}>
              <FaEdit className="text-lg text-purple-500" />
                </li>
@@ -153,7 +153,7 @@ const AdminRanges = () => {
 
       {/* Modal for Editing */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-700 bg-opacity-50 flex justify-center items-center">
+        <div className="fixed inset-0 bg-gray-700 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md">
             <h3 className="text-xl font-bold mb-4">Edit Range</h3>
             <form>
