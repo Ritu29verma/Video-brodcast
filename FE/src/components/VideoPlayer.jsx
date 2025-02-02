@@ -232,12 +232,12 @@ useEffect(() => {
   }, [videoUrl, hasInteracted]);
 
   return (
-    <div className="flex flex-col items-center w-full ">
+    <div className="flex flex-col items-center w-full">
    <div className='relative'>
    <video
       ref={videoRef}
       controls={false}
-      className="w-full max-w-3xl rounded shadow-lg"
+      className="w-full h-full max-w-3xl rounded shadow-lg object-contain"
       style={{ objectFit: 'contain', aspectRatio: '16/9' }}
       autoPlay
       muted

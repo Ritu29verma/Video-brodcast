@@ -176,9 +176,8 @@ const TabSection = () => {
     }
   }, [activeTab]);
 
-
   return (
-    <div className="w-full lg:w-6/12 bg-[#06141b] rounded-md shadow-lg p-3 h-auto lg:max-h-screen">
+    <div className="flex flex-col flex-grow overflow-hidden bg-[#06141b] rounded-md shadow-lg p-3">
     <div className="flex justify-center bg-gray-900 rounded-md p-2">
       <span className="text-yellow-400 text-sm sm:text-base">Game ID: {gameId}</span>
     </div>
@@ -198,9 +197,9 @@ const TabSection = () => {
       </div>
 
       {/* Tab Content */}
-      <div className="space-y-0.5 overflow-y-auto">
+      <div className="space-y-0.5 flex-grow overflow-y-auto min-h-0">
       {activeTab === 'All Bets' && (
-          <div className="w-full max-h-[480px] overflow-y-auto scrollbar-hide">
+          <div className="w-full h-full overflow-y-auto scrollbar-hide">
            <div className="grid grid-cols-7 text-yellow-400 font-bold p-2 rounded-md text-xs sm:text-sm text-center">
               <span>User</span>
               <span>Game ID</span>
@@ -211,7 +210,11 @@ const TabSection = () => {
               <span>Win/Loss</span>
             </div>
             <div className="w-full overflow-y-auto scrollbar-hide">
-            {allBetsData.map((entry, index) => (
+            {allBetsData.length == 0 ? (
+        <div>
+          <p className="text-center text-white font-sm p-4">No bets available</p>
+        </div>
+      ) : (allBetsData.map((entry, index) => (
               <div
                 key={index}
                 className={`m-1 grid grid-cols-7 p-2 rounded-md text-center text-xs sm:text-sm bg-black`}
@@ -226,13 +229,13 @@ const TabSection = () => {
                   {entry.winLoss.toUpperCase()}
                 </span>
               </div>
-            ))}
+            )))}
           </div>
           </div>
         )}
 
           {activeTab === 'My Bets' && (
-              <div className="w-full max-h-[480px] overflow-y-auto scrollbar-hide">
+              <div className="w-full h-full overflow-y-auto scrollbar-hide">
               {/* Heading Row */}
               <div className="grid grid-cols-6 text-yellow-400 font-bold p-2 rounded-md text-xs sm:text-sm text-center">
                 <span>Game ID</span>
@@ -245,7 +248,11 @@ const TabSection = () => {
 
               {/* Data Rows */}
               <div className="w-full overflow-y-auto scrollbar-hide">
-              {myBetsData.map((entry, index) => (
+              {myBetsData.length == 0 ? (
+        <div>
+          <p className="text-center text-white font-sm p-4">No bets available</p>
+        </div>
+      ) :(myBetsData.map((entry, index) => (
                 <div
                   key={index}
                   className={`m-1 grid grid-cols-6 p-2 rounded-md text-center text-xs sm:text-sm bg-black`}
@@ -259,14 +266,14 @@ const TabSection = () => {
                     {entry.winLoss.toUpperCase()}
                   </span>
                 </div>
-              ))}
+              )))}
             </div>
             </div>
           )}
 
 
 {activeTab === 'Logs' && (
-<div className="w-full max-h-[480px] overflow-y-auto scrollbar-hide">
+<div className="w-full h-full overflow-y-auto scrollbar-hide">
     {/* Heading Row */}
     <div className="grid grid-cols-3 text-yellow-400 font-bold p-2 rounded-md text-xs sm:text-sm text-center">
       <span>Game ID</span>
@@ -276,7 +283,12 @@ const TabSection = () => {
 
     {/* Data Rows (Scrollable) */}
     <div className="w-full overflow-y-auto scrollbar-hide">
-      {logsData.map((entry, index) => (
+      {logsData.length == 0 ? (
+        <div>
+          <p className="text-center text-white font-sm p-4">No logs available</p>
+        </div>
+      ) :
+    ( logsData.map((entry, index) => (
         <div
           key={entry.gameId}
           className="m-1 grid grid-cols-3 p-2 rounded-md text-center text-xs sm:text-sm bg-black"
@@ -285,7 +297,8 @@ const TabSection = () => {
           <span className="text-white">{entry.dateTime}</span>
           <span className="text-blue-400">x{entry.coinReach}</span>
         </div>
-      ))}
+      )))
+    }
     </div>
   </div>
 )}

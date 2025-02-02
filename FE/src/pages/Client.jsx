@@ -20,8 +20,8 @@ const Client = () => {
   }, []);
 
   return (
-    <div className="md:max-h-screen min-h-screen bg-gray-900 flex flex-col">
-      <Navbar userId={userName}  />
+    <div className="h-screen bg-gray-900 flex flex-col">
+      <Navbar userId={userName} className="h-[60px]" />
 
       {!hasInteracted && (
         <div
@@ -34,17 +34,18 @@ const Client = () => {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:space-x-3 p-1">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:space-x-3 p-1 overflow-hidden">
 
         {/* Video and Betting Game Section */}
-        <div className="w-full h-full lg:w-2/3 flex flex-col">
+        <div className="w-full h-full lg:w-2/3 flex flex-col flex-grow">
           <div className="w-full h-4/5 flex items-center justify-center bg-black rounded-md shadow-lg p-1">
             {hasInteracted && <VideoPlayer hasInteracted={hasInteracted} setHasInteracted={setHasInteracted} />}
           </div>
           <BettingGame />
         </div>
-        <TabSection/>
-        
+        <div className="w-full lg:w-6/12 flex flex-col flex-grow overflow-hidden">
+          <TabSection />
+        </div>
       </div> 
     </div>
   );

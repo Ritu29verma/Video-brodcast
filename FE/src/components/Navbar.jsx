@@ -81,13 +81,10 @@ const Navbar = ({ userId  }) => {
   }, [setWalletAmount]);
 
   return (
-    <nav className="bg-black p-3 w-full flex justify-between items-center text-white">
+    <nav className="bg-black p-1 w-full flex justify-between items-center text-white">
       {/* Left Section */}
       <div className="flex items-center space-x-3">
         <h1 className="text-red-500 font-bold text-2xl">Aviator</h1>
-        {/* <button className="text-yellow-400 bg-gray-800 px-3 py-1 rounded-md hover:bg-gray-700">
-          How to play?
-        </button> */}
       </div>
 
       {/* Right Section */}

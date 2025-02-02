@@ -65,7 +65,7 @@ const initializeApp = async () => {
 
   server.listen(PORT, async () => {
     console.log(`Server is running on ${PORT}`);
-    await launchPuppeteer();  
+    await launchPuppeteer();
   });
 };
 

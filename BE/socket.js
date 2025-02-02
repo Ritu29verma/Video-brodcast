@@ -1,7 +1,10 @@
 const socketIo = require('socket.io');
+const { Op } = require("sequelize");
 const dotenv = require("dotenv");
 const Game = require('./models/Game');
 const UserGameResults = require('./models/UserGameResult')
+const GameRangeSettings = require('./models/GameRangeSettings')
+dotenv.config();
 let tempGameData = null;
 const userSockets = {};
 let coinReach = null;
@@ -16,8 +19,22 @@ let videoState = {
   isMuted: false,
 };
 
-const generateNumericGameId = () => {
-  return Math.floor(100000 + Math.random() * 900000); // 6-digit unique ID
+
+const generateNumericGameId = async () => {
+  let gameId;
+  let isUnique = false;
+
+  while (!isUnique) {
+    gameId = Math.floor(100000 + Math.random() * 900000);
+    // Check if the ID already exists in the database
+    const response = await fetch(`${process.env.BASE_URL}/api/game/check-gameId?gameId=${gameId}`);
+    const data = await response.json();
+
+    if (!data.exists) {
+      isUnique = true; // Unique ID found
+    }
+  }
+  return gameId;
 };
 
 module.exports = (server) => {
@@ -55,15 +72,28 @@ module.exports = (server) => {
     io.emit("play_3rd_video");
   });
 
-  socket.on("start_multiplier", () => {
+  socket.on("start_multiplier", async () => {
+    
     if (multiplierInterval) {
       clearInterval(multiplierInterval);
     }
     multiplier = 1.0;
+    if (!coinReach) {
+      const range = await GameRangeSettings.findOne({
+        where: {
+          minTotalInGame: { [Op.lte]: tempGameData.totalInGame },
+          maxTotalInGame: { [Op.gte]: tempGameData.totalInGame },
+        },
+      });
+      if (range) {
+        coinReach = (Math.random() * (range.maxCoinReach - range.minCoinReach) + range.minCoinReach).toFixed(1);
+      }
+      console.log('automatically set coinreach is',coinReach)
+    }
     multiplierInterval = setInterval(() => {
       multiplier = parseFloat((multiplier + 0.1).toFixed(1));
       io.emit("update_multiplier", multiplier); 
-        if (coinReach !== null && coinReach === multiplier) {
+        if (coinReach !== null && coinReach == multiplier) {
           console.log("Multiplier reached CoinReach value:", coinReach);
           io.emit("play_3rd_video"); 
         }
@@ -88,7 +118,7 @@ module.exports = (server) => {
     console.log('Admin changed video:', videoState.url);
     if (state.url === `${process.env.BASE_URL}/videos/Begin.mp4`){
       tempGameData = {
-      gameId: generateNumericGameId(),
+      gameId: await generateNumericGameId(),
       coinReach: null ,
       totalInGame: 0,
       cashout: 0,

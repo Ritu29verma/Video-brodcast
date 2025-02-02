@@ -10,6 +10,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
   const [waitingForNextRound, setWaitingForNextRound] = useState(false);
 
   const betOptions = [1, 2, 5, 10];
+  const betOptionsMultiply = [1, 2, 5, 10];
 
   const handleBetChange = (change) => {
     const newBet = betAmount + change;
@@ -86,8 +87,9 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
   }, []);
 
   return (
-    <div className="bg-gray-800 text-white rounded-lg shadow-lg p-3 w-full mx-auto">
-     <div className="flex space-x-2 bg-gray-800">
+    <div className="bg-gray-800 text-white rounded-lg shadow-lg p-1 w-full mx-auto">
+     <div className="flex space-x-2 bg-gray-800 m-1">
+      <div>
      <div className="bg-gray-800">
         {/* Bet Adjustment Section */}
         <div className="flex items-center bg-black p-2 rounded-full justify-between mb-1">
@@ -113,17 +115,18 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
             key={option}
             className={`py-1 px-2 rounded-lg font-medium ${
               betAmount === option
-                ? "bg-blue-500 text-white"
+                ? "bg-green-500 text-white"
                 : "bg-gray-700 text-gray-300"
-            } hover:bg-blue-400`}
-            onClick={() => setBetAmount((prev) => prev * option)}
+            } hover:bg-green-400`}
+            onClick={() => setBetAmount(option)}
           >
             {option.toFixed(2)}
           </button>
         ))}
       </div>
      </div>
-
+      </div>
+      
       {/* Place Bet / Cancel / Cashout Buttons */}
       {isFirstVideoPlaying && !waitingForNextRound && userBet == null &&( //i.e 1st vid playing and no waiting since last round
           <button className="w-full py-3 bg-green-500 text-white font-bold text-lg rounded-lg hover:bg-green-600" onClick={handlePlaceBet}>
@@ -187,6 +190,21 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
           </button>
         )}
      </div>
+     <div className="bg-gray-800 grid grid-cols-4 gap-2">
+        {betOptionsMultiply.map((option) => (
+          <button
+            key={option}
+            className={`py-1 px-2 rounded-lg font-medium ${
+              betAmount === option
+                ? "bg-green-500 text-white"
+                : "bg-gray-700 text-gray-300"
+            } hover:bg-green-400`}
+            onClick={() => setBetAmount((prev) => prev * option)}
+          >
+            {option}x
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
@@ -204,7 +222,7 @@ const BettingGame = () => {
   }, []);
 
   return (
-    <div className="flex flex-col md:flex-row gap-1">
+    <div className="flex flex-col md:flex-row gap-1 flex-grow">
     <div className="bg-gray-900 text-white flex flex-col items-center p-1 w-full md:w-1/2">
       <BetButton isFirstVideoPlaying={isFirstVideoPlaying} isSecondVideoPlaying={isSecondVideoPlaying} isThirdVideoPlaying={isThirdVideoPlaying} />
     </div>
