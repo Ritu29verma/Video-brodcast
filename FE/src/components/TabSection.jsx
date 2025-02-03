@@ -222,9 +222,9 @@ const TabSection = () => {
                 <span className="text-white">{entry.user}</span>
                 <span className="text-white">{entry.gameId}</span>
                 <span className="text-white">{entry.dateTime}</span>
-                <span className="text-white">{entry.bet} USD</span>
+                <span className="text-white">{entry.bet} ₹</span>
                 <span className="text-blue-400">x{entry.multiplier}</span>
-                <span className="text-white">{entry.cashout} USD</span>
+                <span className="text-white">{entry.cashout} ₹</span>
                 <span className={`text-${entry.winLoss === 'win' ? 'green-400' : 'red-500'} font-semibold`}>
                   {entry.winLoss.toUpperCase()}
                 </span>
@@ -259,9 +259,9 @@ const TabSection = () => {
       >
                   <span className="text-white">{entry.gameId}</span>
                   <span className="text-white">{entry.dateTime}</span>
-                  <span className="text-white">{entry.bet} USD</span>
+                  <span className="text-white">{entry.bet} ₹</span>
                   <span className="text-blue-400">x{entry.multiplier}</span>
-                  <span className="text-white">{entry.cashout} USD</span>
+                  <span className="text-white">{entry.cashout} ₹</span>
                   <span className={`text-${entry.winLoss === 'win' ? 'green-400' : 'red-500'} font-semibold`}>
                     {entry.winLoss.toUpperCase()}
                   </span>

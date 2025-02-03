@@ -102,7 +102,7 @@ const AdminRanges = () => {
       </form>
 
       {/* Responsive Table with Scrollbar */}
-      <div className="max-h-[calc(100vh-500px)] overflow-y-auto border border-gray-600 rounded-lg scrollbar-hide">
+      <div className="max-h-[calc(100vh-460px)] md:text-base text-xs overflow-y-auto border border-gray-600 rounded-lg scrollbar-hide">
         <table className="w-full border-collapse border border-gray-600">
           <thead className="sticky top-0 bg-gray-800 text-gray-300 z-20">
             <tr>

@@ -94,11 +94,11 @@ const FinalAdmin = () => {
         <AdminNav className="h-[60px]" />
   
         {/* Main Container */}
-        <div className="flex overflow-hidden md:flex-row flex-col w-full p-4 space-y-6 md:space-y-0 md:space-x-6">
+        <div className="flex overflow-hidden md:flex-row flex-col w-full p-4 space-y-6 md:space-y-0 md:space-x-2">
   
           {/* First Row: Coin Input and Ranges */}
-          <div className="w-full md:w-1/2 bg-[#0b0823]  sm:p-6 rounded-lg shadow-lg">
-          <form onSubmit={handleSubmit} className="flex items-center space-x-4">
+          <div className="w-full md:w-1/2 bg-[#0b0823] p-6 rounded-lg shadow-lg">
+          <form onSubmit={handleSubmit} className="flex items-center space-x-1">
           <div className="relative w-full group">
          <input
           type="number"
@@ -152,19 +152,19 @@ const FinalAdmin = () => {
            <div className="grid grid-cols-3 gap-4 mt-6 w-full px-4">
             <div className="bg-blue-600 text-white p-2 rounded-lg shadow-md flex flex-col items-center">
               <span className="text-sm sm:text-base">In-Game Amount</span>
-              <span className="text-lg sm:text-xl font-bold">${stats.InGameAmount}</span>
+              <span className="text-lg sm:text-xl font-bold">₹{stats.InGameAmount}</span>
             </div>
 
             <div className="bg-green-600 text-white p-2 rounded-lg shadow-md flex flex-col items-center">
               <span className="text-sm sm:text-base">Cashouts</span>
-              <span className="text-lg sm:text-xl font-bold">${stats.Cashouts}</span>
+              <span className="text-lg sm:text-xl font-bold">₹{stats.Cashouts}</span>
             </div>
 
             <div className={`p-2 rounded-lg shadow-md flex flex-col items-center 
               ${stats.ProfitOrLoss >= 0 ? "bg-green-500" : "bg-red-600"} text-white`}>
               <span className="text-sm sm:text-base">Profit/Loss</span>
               <span className="text-lg sm:text-xl font-bold">
-                {stats.ProfitOrLoss >= 0 ? `+${stats.ProfitOrLoss}` : stats.ProfitOrLoss} $
+                {stats.ProfitOrLoss >= 0 ? `+${stats.ProfitOrLoss}` : stats.ProfitOrLoss} ₹
               </span>
             </div>
           </div>
