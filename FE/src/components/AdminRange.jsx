@@ -129,7 +129,7 @@ const AdminRanges = () => {
                   </button>
                   {openDropdown === index && (
                     <div className="absolute right-0 -mt-9 bg-gray-800 rounded-md shadow-lg z-10">
-                      <ul className="text-gray-300 ">
+                      <ul className="text-gray-300  z-10">
                       <li
                   className="hover:bg-gray-700 cursor-pointer flex items-center p-2 "
                onClick={() => handleEditClick(range)}>

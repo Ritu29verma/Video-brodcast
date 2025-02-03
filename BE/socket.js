@@ -125,6 +125,7 @@ module.exports = (server) => {
       profitLoss: 0
        };
        io.emit('gameId', tempGameData.gameId);
+       io.emit('stats',tempGameData)
     }
     if (state.url === `${process.env.BASE_URL}/videos/video3.mp4`) {
       if (tempGameData) {
@@ -227,7 +228,8 @@ module.exports = (server) => {
         if (activeBets[clientCode].length < 2) {
           activeBets[clientCode].push(bet);
           socket.emit("walletUpdated", {WalletBalance: data.newWalletBalance});
-        }}    
+        }} 
+        io.emit('stats',tempGameData)   
     } catch (error) {
       console.error("Error placing bet:", error);}
   });
@@ -251,6 +253,7 @@ module.exports = (server) => {
       if (!tempGameData) return;
       tempGameData.totalInGame -= betAmount;
       socket.emit("walletUpdated", {WalletBalance: data.newWalletBalance});
+      io.emit('stats',tempGameData)
     } catch (error) {
       console.error("Error refunding bet:", error);
       return;
@@ -320,7 +323,9 @@ module.exports = (server) => {
           winLoss: "win",
           createdAt: gameResult.createdAt,
         });
+        io.emit('stats',tempGameData)
       } 
+      
     } catch (error) {
       console.error("Error processing cashout:", error);
     }

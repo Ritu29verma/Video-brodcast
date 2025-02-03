@@ -8,7 +8,24 @@ const FinalAdmin = () => {
   const [inputValue, setInputValue] = useState("");
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [videoList, setVideoList] = useState([]);
+  const [gameId, setGameId] = useState(() => sessionStorage.getItem("gameId") || "N/A");
+  const [stats, setStats] = useState({
+    InGameAmount: 0,
+    Cashouts: 0,
+    ProfitOrLoss: 0,
+  });
+  useEffect(() => {
+    socket.on("gameId", (newGameId) => {
+      console.log("Received gameId:", newGameId);
+      setGameId(newGameId);
+      sessionStorage.setItem("gameId", newGameId); 
+    });
 
+    return () => {
+      socket.off("gameId"); 
+    };
+  }, []);
+  
   const fetchVideoList = async () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_BASE_URL}/videos-list`);
@@ -40,10 +57,19 @@ const FinalAdmin = () => {
         console.log("Video changed to:", state.url);
       }
     });
+    socket.on("stats", (newStats) => {
+      console.log("Received stats:", newStats);
+      setStats({
+        InGameAmount: newStats.totalInGame,
+        Cashouts: newStats.cashout,
+        ProfitOrLoss: newStats.profitLoss,
+      });
+    });
 
     return () => {
       socket.off("fetch_current_state");
       socket.off("video_change");
+      socket.off("stats");
     };
   }, []);
 
@@ -100,21 +126,48 @@ const FinalAdmin = () => {
               Add Value
             </button>
           </form>
-            <AdminRanges />
+          <div className="flex relative">
+          <AdminRanges />
+        </div>
           </div>
   
           {/* Second Row: Video Player */}
           <div className="w-full h-full md:h-3/4 md:w-1/2 flex flex-col items-center">
-          <div className="w-full h-full bg-black p-4 sm:p-6 rounded-lg shadow-lg flex flex-col items-center">
-          <VideoPlayer />
+          <div className="flex flex-row gap-4 justify-center">
+          <div className="flex justify-center bg-gray-800 rounded-md p-2 mb-4">
+            <span className="text-yellow-400 text-sm sm:text-base">Game ID: {gameId} </span>
           </div>
           <button
           onClick={handleFlyAway}
-          className="mt-4 sm:mt-6 bg-blue-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg shadow-lg hover:bg-blue-700 disabled:bg-gray-400 transition"
+          className=" bg-blue-600 text-white px-8 p-2 mb-4 rounded-lg shadow-lg hover:bg-blue-700 disabled:bg-gray-400 transition"
           disabled={!isFlyButtonEnabled}
           >
          Fly Away
          </button>
+         </div>
+          <div className="w-full h-full bg-black p-4 sm:p-6 rounded-lg shadow-lg flex flex-col items-center">
+          <VideoPlayer />
+          </div>
+           {/* Game Stats Section */}
+           <div className="grid grid-cols-3 gap-4 mt-6 w-full px-4">
+            <div className="bg-blue-600 text-white p-2 rounded-lg shadow-md flex flex-col items-center">
+              <span className="text-sm sm:text-base">In-Game Amount</span>
+              <span className="text-lg sm:text-xl font-bold">${stats.InGameAmount}</span>
+            </div>
+
+            <div className="bg-green-600 text-white p-2 rounded-lg shadow-md flex flex-col items-center">
+              <span className="text-sm sm:text-base">Cashouts</span>
+              <span className="text-lg sm:text-xl font-bold">${stats.Cashouts}</span>
+            </div>
+
+            <div className={`p-2 rounded-lg shadow-md flex flex-col items-center 
+              ${stats.ProfitOrLoss >= 0 ? "bg-green-500" : "bg-red-600"} text-white`}>
+              <span className="text-sm sm:text-base">Profit/Loss</span>
+              <span className="text-lg sm:text-xl font-bold">
+                {stats.ProfitOrLoss >= 0 ? `+${stats.ProfitOrLoss}` : stats.ProfitOrLoss} $
+              </span>
+            </div>
+          </div>
          </div>
          </div>
          </div>
