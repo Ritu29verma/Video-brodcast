@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const Admin = require("../models/Admin");
-
+const AdminWallet = require('../models/Adminwallet')
 
 exports.registerAdmin = async (req, res) => {
     try {
@@ -59,3 +59,18 @@ exports.registerAdmin = async (req, res) => {
     }
   };
   
+
+exports.getadminBalance =  async (req, res) => {
+  try {
+      let wallet = await AdminWallet.findOne({ where: { id: 1 } });
+
+      // If no wallet found, create one with a zero balance
+      if (!wallet) {
+          wallet = await AdminWallet.create({ id: 1, balance: 0.0 });
+      }
+
+      res.json(wallet.balance);
+  } catch (error) {
+      res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+};

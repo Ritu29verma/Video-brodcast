@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const Game = require('./models/Game');
 const UserGameResults = require('./models/UserGameResult')
 const GameRangeSettings = require('./models/GameRangeSettings')
+const AdminWallet = require('./models/Adminwallet')
 dotenv.config();
 let tempGameData = null;
 const userSockets = {};
@@ -18,6 +19,22 @@ let videoState = {
   currentTime: 0, 
   isMuted: false,
 };
+
+async function updateAdminWalletBalance(amount, io) {
+  try {
+    let wallet = await AdminWallet.findOne();
+
+    wallet.balance += amount;
+    await wallet.save();
+
+    // Emit updated admin wallet balance
+    io.emit("adminWalletUpdated", { adminWalletBalance: wallet.balance });
+
+    return wallet;
+  } catch (error) {
+    console.error("Error updating admin wallet balance:", error);
+  }
+}
 
 
 const generateNumericGameId = async () => {
@@ -221,6 +238,8 @@ module.exports = (server) => {
         if (!tempGameData) return;
         if (!tempGameData.totalInGame) tempGameData.totalInGame = 0;
         tempGameData.totalInGame += betAmount;
+        await updateAdminWalletBalance(betAmount, io); 
+        io.emit('adminWallet',)
         const bet = { code: clientCode, amount: betAmount, cashout:0};
         if (!activeBets[clientCode]) {
           activeBets[clientCode] = [];
@@ -252,6 +271,7 @@ module.exports = (server) => {
       }
       if (!tempGameData) return;
       tempGameData.totalInGame -= betAmount;
+      await updateAdminWalletBalance(-betAmount, io);
       socket.emit("walletUpdated", {WalletBalance: data.newWalletBalance});
       io.emit('stats',tempGameData)
     } catch (error) {
@@ -284,7 +304,7 @@ module.exports = (server) => {
 
         tempGameData.cashout += cashoutAmount; // Update cashout amount
         tempGameData.profitLoss = tempGameData.totalInGame - tempGameData.cashout; 
-        
+        await updateAdminWalletBalance(cashoutAmount, io); 
         if (activeBets[clientCode]) {
           const betIndex = activeBets[clientCode].findIndex(
             (bet) => bet.amount === userBet
