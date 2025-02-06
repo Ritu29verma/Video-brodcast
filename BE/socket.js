@@ -19,7 +19,12 @@ let videoState = {
   currentTime: 0, 
   isMuted: false,
 };
+let activeClientsCount=0;
+let isGameRangesOn = false;
 
+function getGameRangesState() {
+  return isGameRangesOn;
+}
 async function updateAdminWalletBalance(amount, io) {
   try {
     let wallet = await AdminWallet.findOne();
@@ -54,7 +59,7 @@ const generateNumericGameId = async () => {
   return gameId;
 };
 
-module.exports = (server) => {
+const socketHandler  = (server) => {
    io = socketIo(server, {
     cors: {
       origin: process.env.SOCKET_URL,
@@ -94,26 +99,48 @@ module.exports = (server) => {
     if (multiplierInterval) {
       clearInterval(multiplierInterval);
     }
+
+    let adminWallet = await AdminWallet.findOne();
+    let adminBalance = adminWallet.balance;
+    let numberOfUsers = Object.keys(activeBets).length;
+    let totalBets = tempGameData.totalInGame
     multiplier = 1.0;
     if (!coinReach) {
-      const range = await GameRangeSettings.findOne({
-        where: {
-          minTotalInGame: { [Op.lte]: tempGameData.totalInGame },
-          maxTotalInGame: { [Op.gte]: tempGameData.totalInGame },
-        },
-      });
-      if (range) {
-        coinReach = (Math.random() * (range.maxCoinReach - range.minCoinReach) + range.minCoinReach).toFixed(1);
-      }
-      console.log('automatically set coinreach is',coinReach)
+      if (numberOfUsers === 0) {
+        coinReach = (Math.random() * (25 - 1) + 1).toFixed(1); // Random between 1 to 25
+        console.log("No users betting, setting random coinReach:", coinReach);
+      } else{
+          if (adminBalance - totalBets == 0) {
+            coinReach = 1.0;
+            console.log("admin bankrupt")
+          } 
+          else if (!isGameRangesOn) {
+            let expectedPayout = totalBets * 10; // Assume worst case: 10x avg multiplier
+            let safeLimit = (adminBalance) * 0.9; // Admin must keep 10% balance
+            let maxAllowedMultiplier = Math.max(1.0, Math.min(10, safeLimit / expectedPayout));
+            coinReach = (Math.random() * (maxAllowedMultiplier - 1) + 1).toFixed(1);
+          }
+          else {
+            const range = await GameRangeSettings.findOne({
+              where: {
+                minTotalInGame: { [Op.lte]: tempGameData.totalInGame },
+                maxTotalInGame: { [Op.gte]: tempGameData.totalInGame },
+              },
+            });
+            if (range) {
+              coinReach = (Math.random() * (range.maxCoinReach - range.minCoinReach) + range.minCoinReach).toFixed(1);
+            }      
+          }
+        }
+        console.log('automatically set coinreach is',coinReach)
     }
     multiplierInterval = setInterval(() => {
-      multiplier = parseFloat((multiplier + 0.1).toFixed(1));
-      io.emit("update_multiplier", multiplier); 
         if (coinReach !== null && coinReach == multiplier) {
           console.log("Multiplier reached CoinReach value:", coinReach);
           io.emit("play_3rd_video"); 
         }
+        multiplier = parseFloat((multiplier + 0.1).toFixed(1));
+        io.emit("update_multiplier", multiplier); 
     }, 150);
   });
 
@@ -143,8 +170,11 @@ module.exports = (server) => {
        };
        io.emit('gameId', tempGameData.gameId);
        io.emit('stats',tempGameData)
+       activeClientsCount = Object.keys(activeBets).length;
+      io.emit("activeClientsCount", activeClientsCount);
     }
     if (state.url === `${process.env.BASE_URL}/videos/video3.mp4`) {
+      console.log(activeBets)
       if (tempGameData) {
         tempGameData.coinReach = coinReach;
         try {
@@ -192,6 +222,9 @@ module.exports = (server) => {
       tempGameData = null;
       activeBets = {};
       coinReach = null;
+      activeClientsCount = Object.keys(activeBets).length;
+      io.emit("activeClientsCount", activeClientsCount);
+
       if (multiplierInterval) {
         clearInterval(multiplierInterval);
         multiplierInterval = null;
@@ -239,13 +272,14 @@ module.exports = (server) => {
         if (!tempGameData.totalInGame) tempGameData.totalInGame = 0;
         tempGameData.totalInGame += betAmount;
         await updateAdminWalletBalance(betAmount, io); 
-        io.emit('adminWallet',)
         const bet = { code: clientCode, amount: betAmount, cashout:0};
         if (!activeBets[clientCode]) {
           activeBets[clientCode] = [];
         }
         if (activeBets[clientCode].length < 2) {
           activeBets[clientCode].push(bet);
+          activeClientsCount = Object.keys(activeBets).length;
+          io.emit("activeClientsCount", activeClientsCount);
           socket.emit("walletUpdated", {WalletBalance: data.newWalletBalance});
         }} 
         io.emit('stats',tempGameData)   
@@ -285,6 +319,11 @@ module.exports = (server) => {
       if (betIndex !== -1) {
         activeBets[clientCode].splice(betIndex, 1); // Remove only one bet
       }
+      if (activeBets[clientCode].length === 0) {
+        delete activeBets[clientCode];
+      }
+      activeClientsCount = Object.keys(activeBets).length;
+      io.emit("activeClientsCount", activeClientsCount);
     }
   });
 
@@ -304,13 +343,16 @@ module.exports = (server) => {
 
         tempGameData.cashout += cashoutAmount; // Update cashout amount
         tempGameData.profitLoss = tempGameData.totalInGame - tempGameData.cashout; 
-        await updateAdminWalletBalance(cashoutAmount, io); 
+        await updateAdminWalletBalance(-cashoutAmount, io); 
         if (activeBets[clientCode]) {
           const betIndex = activeBets[clientCode].findIndex(
             (bet) => bet.amount === userBet
           ); 
           if (betIndex !== -1) {
             activeBets[clientCode].splice(betIndex, 1); // Remove only one bet
+          }
+          if (activeBets[clientCode].length === 0) {
+            delete activeBets[clientCode];
           }
         }
         console.log(`Cashout: ${clientCode} won $${cashoutAmount} ${data.newWalletBalance}`);
@@ -344,6 +386,8 @@ module.exports = (server) => {
           createdAt: gameResult.createdAt,
         });
         io.emit('stats',tempGameData)
+        activeClientsCount = Object.keys(activeBets).length;
+        io.emit("activeClientsCount", activeClientsCount);
       } 
       
     } catch (error) {
@@ -351,7 +395,13 @@ module.exports = (server) => {
     }
   });
 
-    socket.on('disconnect', () => {
+  socket.on("toggleGameRanges", (data) => {
+    isGameRangesOn = data.isGameRangesOn;
+    io.emit("gameRangesUpdated", { isGameRangesOn });
+  });
+  io.emit("gameRangesUpdated", { isGameRangesOn });
+
+  socket.on('disconnect', () => {
       console.log('User disconnected:', socket.id);
       for (const clientCode in userSockets) {
         if (userSockets[clientCode] === socket.id) {
@@ -364,4 +414,7 @@ module.exports = (server) => {
   return io;
 };
 
-module.exports.getIo = () => io;
+module.exports = {
+  socketHandler,
+  getGameRangesState
+};

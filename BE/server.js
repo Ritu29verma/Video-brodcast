@@ -5,13 +5,14 @@ const path = require('path');
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
-const socketHandler = require('./socket');
+const {socketHandler} = require('./socket');
 const connectMySQL = require('./config/mysql'); 
 const adminRoutes = require('./routes/adminroutes');
 const userRoutes = require('./routes/clientroutes');
 const gameRoutes = require('./routes/gameroutes');
 const sequelize = require('./models/sequelize');
 const launchPuppeteer = require('./controllers/puppeteerAdmin')
+const { getGameRangesState} = require("./socket")
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
@@ -56,6 +57,9 @@ const initializeApp = async () => {
       const videoFiles = files.filter((file) => /\.(mp4|mov|avi|mkv)$/i.test(file));
       res.status(200).json({ videos: videoFiles });
     });
+  });
+  app.get("/api/get-gameRangesState", (req, res) => {
+    res.json({ isGameRangesOn: getGameRangesState() });
   });
 
   app.use('/api/admin', adminRoutes);

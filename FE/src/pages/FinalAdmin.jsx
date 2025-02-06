@@ -9,6 +9,7 @@ const FinalAdmin = () => {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [videoList, setVideoList] = useState([]);
   const [gameId, setGameId] = useState(() => sessionStorage.getItem("gameId") || "N/A");
+  const [users, setUsers] =useState(0)
   const [stats, setStats] = useState({
     InGameAmount: 0,
     Cashouts: 0,
@@ -44,6 +45,10 @@ const FinalAdmin = () => {
     };
 
     loadVideos();
+    socket.on("activeClientsCount",(activeClientsCount) =>{
+      console.log("users:", activeClientsCount);
+      setUsers(activeClientsCount);
+    })
     socket.on("fetch_current_state", (state) => {
       if (state && state.url) {
         setSelectedVideo(state.url);
@@ -67,6 +72,7 @@ const FinalAdmin = () => {
     });
 
     return () => {
+      socket.off("activeClientsCount");
       socket.off("fetch_current_state");
       socket.off("video_change");
       socket.off("stats");
@@ -144,6 +150,9 @@ const FinalAdmin = () => {
           >
          Fly Away
          </button>
+         <div className="flex justify-center bg-gray-800 rounded-md p-2 mb-4">
+            <span className="text-yellow-400 text-sm sm:text-base">Users: {users} </span>
+          </div>
          </div>
           <div className="w-full h-full bg-black p-4 sm:p-6 rounded-lg shadow-lg flex flex-col items-center">
           <VideoPlayer />

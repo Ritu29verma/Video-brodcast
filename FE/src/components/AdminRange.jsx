@@ -1,16 +1,37 @@
 import React, { useEffect, useState } from "react";
 import { FaEllipsisV, FaEdit, FaTrash} from "react-icons/fa";
 import { IoIosArrowDropdown } from "react-icons/io";
+import socket from "../components/socket";
+
 const AdminRanges = () => {
   const [ranges, setRanges] = useState([]);
   const [formData, setFormData] = useState({ minTotalInGame: "", maxTotalInGame: "", minCoinReach: "", maxCoinReach: "" });
   const [editData, setEditData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [isGameRangesOn, setIsGameRangesOn] = useState(false); // New state for toggle
 
   useEffect(() => {
+    fetchInitialGameRangesState();
     fetchRanges();
+    socket.on("gameRangesUpdated", (data) => {
+      setIsGameRangesOn(data.isGameRangesOn);
+    });
+
+    return () => {
+      socket.off("gameRangesUpdated");
+    };
   }, []);
+
+  const fetchInitialGameRangesState = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/get-gameRangesState`);
+      const data = await response.json();
+      setIsGameRangesOn(data.isGameRangesOn);
+    } catch (error) {
+      console.error("Error fetching game ranges state:", error);
+    }
+  };
 
   const fetchRanges = async () => {
     const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/game/get-gameRanges`);
@@ -64,10 +85,33 @@ const AdminRanges = () => {
 
   const handleModalChange = (e) => setEditData({ ...editData, [e.target.name]: e.target.value });
 
+  const toggleGameRanges = async () => {
+    const newState = !isGameRangesOn;
+    setIsGameRangesOn(newState);
+    socket.emit("toggleGameRanges", { isGameRangesOn: newState });
+  };
+
 
   return (
     <div className="overflow-hidden flex-grow p-4 mt-4 bg-gray-700 rounded-lg shadow-lg w-full max-w-4xl z-10">
-      <h2 className="text-2xl font-bold mb-4 text-center">Manage Game Ranges</h2>
+           <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Manage Game Ranges</h2>
+        <div className="flex items-center">
+          <span className="mr-2 text-white font-bold">Game Ranges:</span>
+          <div
+            onClick={toggleGameRanges}
+            className={`w-14 h-7 flex items-center rounded-full cursor-pointer transition-colors ${
+              isGameRangesOn ? "bg-green-500" : "bg-gray-400"
+            }`}
+          >
+            <span
+              className={`w-6 h-6 bg-white rounded-full shadow transform transition-transform ${
+                isGameRangesOn ? "translate-x-7" : "translate-x-0"
+              }`}
+            />
+          </div>
+        </div>
+    </div>
 
       {/* Responsive Form */}
       <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
