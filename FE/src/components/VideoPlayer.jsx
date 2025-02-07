@@ -75,7 +75,12 @@ const VideoPlayer = () => {
         videoElement.muted = state.isMuted || false;
       }
   
-      setShowOverlay(state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`);
+      setShowOverlay(prevState => {
+        const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4` ||
+                         state.url === `${import.meta.env.VITE_BASE_URL}/videos/video3.mp4`;
+      
+        return newState;
+      });
     });
   
     return () => socket.off("admin_control");
@@ -97,7 +102,12 @@ useEffect(() => {
 //  Listen for real-time updates from the admin
 useEffect(() => {
   socket.on("video_change", (state) => {
-    setShowOverlay(state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`);
+    setShowOverlay(prevState => {
+      const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4` ||
+                       state.url === `${import.meta.env.VITE_BASE_URL}/videos/video3.mp4`;
+    
+      return newState;
+    });
 
     const videoElement = videoRef.current;
     if (videoElement && videoElement.src !== state.url) {
@@ -127,10 +137,11 @@ useEffect(() => {
       socket.emit('fetch_current_state', {} , (state) => {
         console.log('Fetched current state from admin:', state);
         setShowOverlay(prevState => {
-          const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`;
-          
+          const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4` ||
+                           state.url === `${import.meta.env.VITE_BASE_URL}/videos/video3.mp4`;
+        
           return newState;
-      });
+        });
 
         const videoElement = videoRef.current;
         if (videoElement && state) {
@@ -204,14 +215,18 @@ useEffect(() => {
     socket.on('start_stream', (state) => {
       console.log('Received initial state:', state);
       setShowOverlay(prevState => {
-        const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`;
+        const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4` ||
+                         state.url === `${import.meta.env.VITE_BASE_URL}/videos/video3.mp4`;
+      
         return newState;
-    });
+      });
       const videoElement = videoRef.current;
       if (state.url) {
         setVideoUrl(state.url);
         setShowOverlay(prevState => {
-          const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`;
+          const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4` ||
+                           state.url === `${import.meta.env.VITE_BASE_URL}/videos/video3.mp4`;
+        
           return newState;
         });
         if (videoElement) {
