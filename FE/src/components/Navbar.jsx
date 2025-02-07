@@ -3,8 +3,7 @@ import { FaBars, FaTimes, FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import socket from "../components/socket";
 import axios from 'axios';
 
-const Navbar = ({ userId  }) => {
-  const [isMuted, setIsMuted] = useState(true); // Mute state
+const Navbar = ({ userId , isMuted, handleMuteToggle  }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false); // Dropdown state
   const videoRef = useRef(null); // Video reference
   const [walletAmount, setWalletAmount] = useState(0);
@@ -58,11 +57,6 @@ const Navbar = ({ userId  }) => {
     };
   }, []);
 
-
-  const toggleMute = () => {
-    setIsMuted(prev => !prev);
-  };
-
   // Ensure video mute state updates
   useEffect(() => {
     if (videoRef.current) {
@@ -95,31 +89,31 @@ const Navbar = ({ userId  }) => {
         </span>
 
         {/* Mute/Unmute Button (Desktop) */}
-        <button
-          onClick={toggleMute}
+        {/* <button
+          onClick={handleMuteToggle}
           className="hidden md:block bg-gray-800 p-2 rounded-md hover:bg-gray-700"
         >
           {isMuted ? <FaVolumeMute size={20} /> : <FaVolumeUp size={20} />}
-        </button>
+        </button> */}
 
         {/* Hamburger Menu (Mobile) */}
-        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden">
+        {/* <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden">
           {isMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
-        </button>
+        </button> */}
       </div>
 
       {/* Dropdown Menu (Mobile) */}
-      {isMenuOpen && (
+      {/* {isMenuOpen && (
         <div className="absolute top-14 right-4 bg-gray-900 text-white z-1 rounded-md shadow-lg p-3 w-40 z-50">
           <button 
-            onClick={toggleMute}
+            onClick={handleMuteToggle}
             className="flex items-center space-x-2 w-full text-left py-2 px-3 hover:bg-gray-700 rounded-md"
           >
             {isMuted ? <FaVolumeMute size={18} /> : <FaVolumeUp size={18} />}
             <span>{isMuted ? "Unmute" : "Mute"}</span>
           </button>
         </div>
-      )}
+      )} */}
     </nav>
   );
 };

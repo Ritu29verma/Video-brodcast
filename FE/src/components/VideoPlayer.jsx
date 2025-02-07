@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import socket from "../components/socket";
+import Muted from "../components/Muted"
 
 const VideoPlayer = () => {
   const videoRef = useRef(null);
@@ -10,6 +11,15 @@ const VideoPlayer = () => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [currentMultiplier, setCurrentMultiplier] = useState(1.00);
   const [loading, setLoading] = useState(true);
+  const [isMuted, setIsMuted] = useState(false); 
+
+  const handleMuteToggle = () => {
+    const videoElement = videoRef.current;
+    if (videoElement) {
+      videoElement.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
   
    const fetchVideoList = async () => {
       try {
@@ -72,7 +82,7 @@ const VideoPlayer = () => {
           videoElement.pause();
         }
   
-        videoElement.muted = state.isMuted || false;
+      //  videoElement.muted = isMuted;
       }
   
       setShowOverlay(prevState => {
@@ -82,9 +92,8 @@ const VideoPlayer = () => {
         return newState;
       });
     });
-  
     return () => socket.off("admin_control");
-  }, []);
+  }, [isMuted]); // ✅ Track client's mute state
   
   
 
@@ -113,7 +122,7 @@ useEffect(() => {
     if (videoElement && videoElement.src !== state.url) {
       videoElement.src = state.url;
       videoElement.currentTime = state.currentTime || 0;
-      videoElement.muted = state.isMuted || false;
+      //videoElement.muted = state.isMuted || false;
 
       if (state.isPlaying) {
         videoElement.play().catch((err) => console.error("Error playing video:", err));
@@ -147,7 +156,7 @@ useEffect(() => {
         if (videoElement && state) {
           videoElement.src = state.url;
           videoElement.currentTime = state.currentTime || 0;
-          videoElement.muted = state.isMuted || false;
+         // videoElement.muted = state.isMuted || false;
 
           // Start video playback if admin is playing
           if (state.isPlaying) {
@@ -207,7 +216,7 @@ useEffect(() => {
         videoElement.pause();
       }
       // Sync mute state
-      videoElement.muted = isMuted;
+     // videoElement.muted = isMuted;
     }
   }, [videoState]);
 
@@ -232,7 +241,7 @@ useEffect(() => {
         if (videoElement) {
           videoElement.src = state.url;
           videoElement.currentTime = state.currentTime || 0;
-          videoElement.muted = state.isMuted || false;
+         // videoElement.muted = isMuted;
         }
       }
     });
@@ -244,7 +253,7 @@ useEffect(() => {
       window.removeEventListener('click', handleUserInteraction);
       window.removeEventListener('keydown', handleUserInteraction);
     };
-  }, [videoUrl, hasInteracted]);
+  }, [videoUrl, hasInteracted, isMuted]);
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -255,7 +264,6 @@ useEffect(() => {
       className="w-full h-full max-w-3xl rounded shadow-lg object-contain"
       style={{ objectFit: 'contain', aspectRatio: '16/9' }}
       autoPlay
-      muted
     />
     {loading && (
           <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
@@ -267,6 +275,10 @@ useEffect(() => {
             <span className="text-white font-bold text-5xl">{currentMultiplier.toFixed(2)}x</span>
           </div>
         )}
+         <Muted
+      isMuted={isMuted} 
+      handleMuteToggle={handleMuteToggle} 
+    />
    </div>
         </div>
   );

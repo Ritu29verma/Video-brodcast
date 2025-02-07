@@ -9,8 +9,19 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
   const [userBet, setUserBet] = useState(null); 
   const [waitingForNextRound, setWaitingForNextRound] = useState(false);
 
-  const betOptions = [1, 2, 5, 10];
+  const betOptions = [100, 200, 500, 1000];
   const betOptionsMultiply = [1, 2, 5, 10];
+  const [lastClicked, setLastClicked] = useState(null);
+
+  const handleBetClick = (option) => {
+    if (lastClicked === option) {
+      setBetAmount((prev) => prev + option);
+    } else {
+      setBetAmount(option);
+      setLastClicked(option);
+    }
+  };
+
 
   const handleBetChange = (change) => {
     const newBet = betAmount + change;
@@ -109,21 +120,21 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
       </div>
       
        {/* Bet Options */}
-       <div className="bg-gray-800 grid grid-cols-2 gap-2">
-        {betOptions.map((option) => (
-          <button
-            key={option}
-            className={`py-1 px-2 rounded-lg font-medium ${
-              betAmount === option
-                ? "bg-green-500 text-white"
-                : "bg-gray-700 text-gray-300"
-            } hover:bg-green-400`}
-            onClick={() => setBetAmount(option)}
-          >
-            {option.toFixed(2)}
-          </button>
-        ))}
-      </div>
+       <div className="bg-gray-800 grid grid-cols-2 gap-2 p-4">
+      {betOptions.map((option) => (
+        <button
+          key={option}
+          className={`py-2 px-4 rounded-lg font-bold md:text-lg text-sm ${
+            lastClicked === option
+              ? "bg-green-500 text-white"
+              : "bg-gray-700 text-gray-300"
+          } hover:bg-green-400 transition duration-200`}
+          onClick={() => handleBetClick(option)}
+        >
+          {option.toFixed(2)}
+        </button>
+      ))}
+    </div>
      </div>
       </div>
       
@@ -190,7 +201,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
           </button>
         )}
      </div>
-     <div className="bg-gray-800 grid grid-cols-4 gap-2">
+     {/* <div className="bg-gray-800 grid grid-cols-4 gap-2">
         {betOptionsMultiply.map((option) => (
           <button
             key={option}
@@ -204,7 +215,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
             {option}x
           </button>
         ))}
-      </div>
+      </div> */}
     </div>
   );
 };
