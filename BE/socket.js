@@ -107,7 +107,7 @@ const socketHandler  = (server) => {
     multiplier = 1.0;
     if (!coinReach) {
       if (numberOfUsers === 0) {
-        coinReach = (Math.random() * (25 - 1) + 1).toFixed(1); // Random between 1 to 25
+        coinReach = (Math.random() * (25 - 1) + 1).toFixed(2); // Random between 1 to 25
         console.log("No users betting, setting random coinReach:", coinReach);
       } else{
           if (adminBalance - totalBets == 0) {
@@ -118,7 +118,7 @@ const socketHandler  = (server) => {
             let expectedPayout = totalBets * 10; // Assume worst case: 10x avg multiplier
             let safeLimit = (adminBalance) * 0.9; // Admin must keep 10% balance
             let maxAllowedMultiplier = Math.max(1.0, Math.min(10, safeLimit / expectedPayout));
-            coinReach = (Math.random() * (maxAllowedMultiplier - 1) + 1).toFixed(1);
+            coinReach = (Math.random() * (maxAllowedMultiplier - 1) + 1).toFixed(2);
           }
           else {
             const range = await GameRangeSettings.findOne({
@@ -128,7 +128,7 @@ const socketHandler  = (server) => {
               },
             });
             if (range) {
-              coinReach = (Math.random() * (range.maxCoinReach - range.minCoinReach) + range.minCoinReach).toFixed(1);
+              coinReach = (Math.random() * (range.maxCoinReach - range.minCoinReach) + range.minCoinReach).toFixed(2);
             }      
           }
         }
@@ -138,10 +138,11 @@ const socketHandler  = (server) => {
         if (coinReach !== null && coinReach == multiplier) {
           console.log("Multiplier reached CoinReach value:", coinReach);
           io.emit("play_3rd_video"); 
+          io.emit("multiplier_stopped", multiplier.toFixed(2)); 
         }
-        multiplier = parseFloat((multiplier + 0.1).toFixed(1));
+        multiplier = parseFloat((multiplier + 0.01).toFixed(2));
         io.emit("update_multiplier", multiplier); 
-    }, 150);
+    }, 120);
   });
 
 

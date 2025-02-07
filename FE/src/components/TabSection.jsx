@@ -177,7 +177,7 @@ const TabSection = () => {
   }, [activeTab]);
 
   return (
-    <div className="flex flex-col flex-grow overflow-hidden bg-[#06141b] rounded-md shadow-lg p-3">
+    <div className=" flex flex-col flex-grow overflow-hidden bg-[#06141b] rounded-md shadow-lg p-3">
     <div className="flex justify-center bg-gray-900 rounded-md p-2">
       <span className="text-yellow-400 text-sm sm:text-base">Game ID: {gameId}</span>
     </div>
@@ -197,7 +197,7 @@ const TabSection = () => {
       </div>
 
       {/* Tab Content */}
-      <div className="space-y-0.5 flex-grow overflow-y-auto min-h-0">
+      <div className="scrollbar-hide space-y-0.5 flex-grow overflow-y-auto min-h-0">
       {activeTab === 'All Bets' && (
           <div className="w-full h-full overflow-y-auto scrollbar-hide">
            <div className="grid grid-cols-7 text-yellow-400 font-bold p-2 rounded-md text-xs sm:text-sm text-center">

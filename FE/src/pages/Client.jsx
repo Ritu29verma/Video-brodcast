@@ -20,7 +20,7 @@ const Client = () => {
   }, []);
 
   return (
-    <div className="h-screen bg-gray-900 flex flex-col">
+    <div className="min-h-screen bg-gray-900 flex flex-col">
       <Navbar userId={userName} className="h-[60px]" />
 
       {!hasInteracted && (
@@ -34,7 +34,7 @@ const Client = () => {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:space-x-3 p-1 overflow-hidden">
+      <div className="flex scrollbar-hide flex-col lg:flex-row lg:justify-between lg:space-x-3 p-1 overflow-y-scroll">
 
         {/* Video and Betting Game Section */}
         <div className="w-full h-full lg:w-2/3 flex flex-col flex-grow">
@@ -43,7 +43,7 @@ const Client = () => {
           </div>
           <BettingGame />
         </div>
-        <div className="w-full lg:w-6/12 flex flex-col flex-grow overflow-hidden">
+        <div className="w-full scrollbar-hide max-h-[calc(100vh-60px)] lg:w-6/12 flex flex-col flex-grow overflow-hidden">
           <TabSection />
         </div>
       </div> 

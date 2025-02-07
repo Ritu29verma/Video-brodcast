@@ -8,7 +8,7 @@ const VideoPlayer = () => {
   const [videoState, setVideoState] = useState(null);
   const [videoList, setVideoList] = useState([]);
   const [showOverlay, setShowOverlay] = useState(false);
-  const [currentMultiplier, setCurrentMultiplier] = useState(1);
+  const [currentMultiplier, setCurrentMultiplier] = useState(1.00);
   const [loading, setLoading] = useState(true);
   
    const fetchVideoList = async () => {
@@ -150,7 +150,7 @@ useEffect(() => {
       });
     }
   };
-
+  
   const attemptPlay = () => {
     const videoElement = videoRef.current;
     if (videoElement) {
@@ -249,7 +249,7 @@ useEffect(() => {
         )}
         {!loading && showOverlay && (
           <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
-            <span className="text-white font-bold text-5xl">{currentMultiplier.toFixed(1)}x</span>
+            <span className="text-white font-bold text-5xl">{currentMultiplier.toFixed(2)}x</span>
           </div>
         )}
    </div>

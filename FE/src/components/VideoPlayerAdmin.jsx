@@ -165,8 +165,14 @@ const VideoPlayerAdmin = () => {
         console.warn("Not enough videos in the list!");
       }
     });
+    
+    socket.on("multiplier_stopped", (multiplier) => {
+      setStoppedMultiplier(multiplier); // Capture stopped multiplier
+    });
+
     return () => {
       socket.off("update_multiplier");
+      socket.off("multiplier_stopped");
       socket.off("play_3rd_video");
     };
   }, []);
@@ -255,7 +261,7 @@ const VideoPlayerAdmin = () => {
           />
           {showOverlay && (
             <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
-              <span className="text-white font-bold text-5xl">{currentMultiplier.toFixed(1)}x</span>
+              <span className="text-white font-bold text-5xl">{currentMultiplier.toFixed(2)}x</span>
             </div>
           )}
         </div>
