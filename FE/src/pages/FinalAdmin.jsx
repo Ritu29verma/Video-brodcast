@@ -3,6 +3,7 @@ import VideoPlayer from "../components/VideoPlayer";
 import socket from "../components/socket";
 import AdminRanges from "../components/AdminRange";
 import AdminNav from "../components/AdminNav";
+import AdminTabSection from "../components/AdminTabSection";
 
 const FinalAdmin = () => {
   const [inputValue, setInputValue] = useState("");
@@ -133,7 +134,9 @@ const FinalAdmin = () => {
             </button>
           </form>
           <div className="flex relative">
-          <AdminRanges />
+          {/* <AdminRanges />
+           */}
+          <AdminTabSection/>
         </div>
           </div>
   
