@@ -184,6 +184,7 @@ const socketHandler  = (server) => {
       console.log(activeBets)
       if (tempGameData) {
         tempGameData.coinReach = coinReach;
+        tempGameData.profitLoss = tempGameData.totalInGame - tempGameData.cashout; 
         try {
           await Game.create(tempGameData);
           io.emit('gameData', tempGameData);

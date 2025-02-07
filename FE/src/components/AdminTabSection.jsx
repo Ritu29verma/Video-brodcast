@@ -106,9 +106,9 @@ const AdminTabSection = () => {
                 minute: '2-digit',
                 second: '2-digit',
               }),
-              coinReach: newGameData.coinReach ?? 'N/A',
-              totalInGame: newGameData.totalInGame ?? 0,
-              cashout: newGameData.cashout ?? 0,
+              coinReach: newGameData.coinReach,
+              totalInGame: newGameData.totalInGame,
+              cashout: newGameData.cashout,
               profitLoss: newGameData.profitLoss ?? 0,
             },
             ...prevLogs,
@@ -124,7 +124,8 @@ const AdminTabSection = () => {
   }, [activeTab]);
 
   return (
-    <div className=" flex flex-col flex-grow overflow-hidden bg-[#171858] rounded-md shadow-lg p-3 mt-2">
+    <div className="flex flex-col h-[calc(100vh-180px)] bg-[#171858] rounded-md shadow-lg p-3 mt-2">
+
         
             {/* Tabs */}
         <div className="flex w-full border-b border-gray-700">

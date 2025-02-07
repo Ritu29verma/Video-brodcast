@@ -104,7 +104,7 @@ const FinalAdmin = () => {
         <div className="flex overflow-hidden md:flex-row flex-col w-full p-4 space-y-6 md:space-y-0 md:space-x-2">
   
           {/* First Row: Coin Input and Ranges */}
-          <div className="w-full md:w-1/2 bg-[#0b0823] p-6 rounded-lg shadow-lg">
+          <div className="w-full md:w-1/2 bg-[#0b0823] p-4 rounded-lg shadow-lg">
           <form onSubmit={handleSubmit} className="flex items-center space-x-1">
           <div className="relative w-full group">
          <input
@@ -112,7 +112,7 @@ const FinalAdmin = () => {
           id="coinReach"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          className="peer w-full p-3 text-white bg-transparent border border-gray-400 rounded-lg focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition duration-150
+          className="peer w-full p-2 text-white bg-transparent border border-gray-400 rounded-lg focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition duration-150
            [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-moz-appearance:textfield]"
           required
          />
@@ -127,13 +127,13 @@ const FinalAdmin = () => {
 
             <button
               type="submit"
-              className="bg-blue-600 text-white m-1 p-1 rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-400 transition"
+              className="bg-blue-600 text-white text-sm m-1 p-1 rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-400 transition"
               disabled={!isButtonEnabled}
             >
               Add Value
             </button>
           </form>
-          <div className="flex relative">
+          <div className="">
           {/* <AdminRanges />
            */}
           <AdminTabSection/>
