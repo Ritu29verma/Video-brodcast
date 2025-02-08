@@ -266,7 +266,7 @@ const socketHandler  = (server) => {
   });
     
 
-  socket.on("placeBet", async ({ clientCode, betAmount }) => {
+  socket.on("placeBet", async ({ clientCode, betAmount }, callback)  => {
     if (!clientCode || !betAmount) return;
     try {
       const response = await fetch(`${process.env.BASE_URL}/api/client/deductBetAmount`,{
@@ -289,10 +289,19 @@ const socketHandler  = (server) => {
           activeClientsCount = Object.keys(activeBets).length;
           io.emit("activeClientsCount", activeClientsCount);
           socket.emit("walletUpdated", {WalletBalance: data.newWalletBalance});
-        }} 
-        io.emit('stats',tempGameData)   
+
+        }
+        io.emit('stats',tempGameData)
+        return callback({ success: true });
+      }  
+       else {
+        return callback({ success: false, message: "Insufficient balance." });
+      }
     } catch (error) {
-      console.error("Error placing bet:", error);}
+      console.error("Error placing bet:", error);
+      return callback({ success: false, message: "An error occurred while placing the bet." });
+    }   
+
   });
 
   socket.on("cancelBet", async ({ clientCode, betAmount }) => {
