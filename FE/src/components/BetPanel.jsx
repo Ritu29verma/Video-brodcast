@@ -33,8 +33,17 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
     if (isFirstVideoPlaying) {
       setUserBet(betAmount);
       setWaitingForNextRound(false);
-      // toast.info(`Bet sent to socket $${userBet}`);
-      socket.emit("placeBet", { clientCode, betAmount });
+      socket.emit("placeBet", { clientCode, betAmount }, (response) => {
+        if (response.success) {
+          setUserBet(betAmount);
+          setWaitingForNextRound(false);
+          toast.success(`Bet placed successfully: ${betAmount} Rs.`);
+        } else {
+          setUserBet(null);
+          setWaitingForNextRound(false);
+          toast.error(response.message || "Failed to place bet.");
+        }
+      });
     } else if (isSecondVideoPlaying && userBet === null) {
       setUserBet(betAmount);
       setWaitingForNextRound(true);
@@ -71,12 +80,20 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
 
   useEffect(() => {
     if (isFirstVideoPlaying && waitingForNextRound && userBet !== null) {
-      toast.info(`Bet auto-placed from last round: ${userBet} Rs.`);
-      const clientCode = sessionStorage.getItem("client_code");
+      // toast.info(`Bet auto-placed from last round: ${userBet} Rs.`);
+    const clientCode = sessionStorage.getItem("client_code");
     if (clientCode) {
-      socket.emit("placeBet", { clientCode, betAmount: userBet });
-    }
-      setWaitingForNextRound(false);
+      socket.emit("placeBet", { clientCode, betAmount: userBet }, (response) => {
+        if (response.success) {
+          setWaitingForNextRound(false);
+          toast.success(`Bet placed successfully: ${betAmount} Rs.`);
+        } else {
+          setUserBet(null)
+          setWaitingForNextRound(false);
+          toast.error(response.message);
+        }
+      });
+    }  
     }
   }, [isFirstVideoPlaying]);
 
@@ -120,11 +137,11 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
       </div>
       
        {/* Bet Options */}
-       <div className="bg-gray-800 grid grid-cols-2 gap-2 p-4">
+       <div className="bg-gray-800 grid grid-cols-2 gap-2 p-2">
       {betOptions.map((option) => (
         <button
           key={option}
-          className={`py-2 px-4 rounded-lg font-bold md:text-lg text-sm ${
+          className={`"w-full py-2 px-8 rounded-lg font-bold text-base flex items-center justify-center ${
             lastClicked === option
               ? "bg-green-500 text-white"
               : "bg-gray-700 text-gray-300"

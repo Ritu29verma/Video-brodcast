@@ -41,7 +41,9 @@ const Client = () => {
           <div className="w-full h-4/5 flex items-center justify-center bg-black rounded-md shadow-lg p-1">
             {hasInteracted && <VideoPlayer hasInteracted={hasInteracted} setHasInteracted={setHasInteracted} />}
           </div>
+          <div className="mt-6">
           <BettingGame />
+          </div>
         </div>
         <div className="w-full scrollbar-hide max-h-[calc(100vh-60px)] lg:w-6/12 flex flex-col flex-grow overflow-hidden">
           <TabSection />
