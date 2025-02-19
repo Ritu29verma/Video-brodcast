@@ -13,6 +13,7 @@ const gameRoutes = require('./routes/gameroutes');
 const sequelize = require('./models/sequelize');
 const launchPuppeteer = require('./controllers/puppeteerAdmin')
 const { getGameRangesState} = require("./socket")
+
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
@@ -68,6 +69,7 @@ const initializeApp = async () => {
   socketHandler(server);
   server.listen(PORT, async () => {
     console.log(`Server is running on ${PORT}`);
+    await launchPuppeteer();
   });
 };
 

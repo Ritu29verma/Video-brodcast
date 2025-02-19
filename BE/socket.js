@@ -22,6 +22,23 @@ let videoState = {
 let activeClientsCount=0;
 let isGameRangesOn = false;
 
+async function getOrCreateAdminWallet() {
+  try {
+      let adminWallet = await AdminWallet.findOne();
+
+      if (!adminWallet) {
+          // If no wallet exists, create one with a 0 balance
+          adminWallet = await AdminWallet.create({ balance: 0.0 });
+      }
+
+      return adminWallet;
+  } catch (error) {
+      console.error("Error fetching admin wallet:", error);
+      // Create a new entry if an error occurs
+      return await AdminWallet.create({ balance: 0.0 });
+  }
+}
+
 function roundToNearestPoint05(value) {
   return Math.round(value / 0.05) * 0.05;
 }
@@ -103,7 +120,7 @@ const socketHandler  = (server) => {
       clearInterval(multiplierInterval);
     }
 
-    let adminWallet = await AdminWallet.findOne();
+    let adminWallet = await getOrCreateAdminWallet();
     let adminBalance = adminWallet.balance;
     let numberOfUsers = Object.keys(activeBets).length;
     let totalBets = tempGameData.totalInGame

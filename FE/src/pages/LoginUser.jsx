@@ -27,7 +27,7 @@ const LoginUser = () => {
         sessionStorage.setItem("token", token);  // Storing the token
         socket.emit("registerUser", client.code);
         console.log(message);  // Optional: Log success message
-        navigate("/homepage");
+        navigate("/");
       } else {
         console.error("Client not found or incorrect password.");
       }

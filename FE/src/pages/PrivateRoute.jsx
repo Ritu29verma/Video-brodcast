@@ -9,15 +9,14 @@ const PrivateRoute = ({ children }) => {
     const role = sessionStorage.getItem("role");
 
     if (!role) {
-      navigate("/login");
+      navigate("/admin/login");
       return;
     }
     if (role === "client") {
-      navigate("/homepage");  
-    // } else if (role === "admin") {
-    //   navigate("/main");  
+      navigate("/");  
+
     } else {
-      navigate("/main");
+      navigate("/admin");
     }
 
     setLoading(false);

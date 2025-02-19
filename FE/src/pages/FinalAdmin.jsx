@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState,useRef, useEffect } from "react";
 import VideoPlayer from "../components/VideoPlayer";
 import socket from "../components/socket";
 import AdminRanges from "../components/AdminRange";
@@ -16,6 +16,8 @@ const FinalAdmin = () => {
     Cashouts: 0,
     ProfitOrLoss: 0,
   });
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const overlayRef = useRef(null);
   useEffect(() => {
     socket.on("gameId", (newGameId) => {
       console.log("Received gameId:", newGameId);
@@ -95,6 +97,32 @@ const FinalAdmin = () => {
   };
   const isFlyButtonEnabled = selectedVideo === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4`;
   const isButtonEnabled = selectedVideo === `${import.meta.env.VITE_BASE_URL}/videos/Begin.mp4`;
+
+  const handleInteraction = () => {
+    setHasInteracted(true);
+  }
+  useEffect(() => {
+    if (overlayRef.current) {
+      overlayRef.current.focus(); // Ensure the div gets focus
+    }
+  }, []);
+
+  if (!hasInteracted) {
+    return (
+      <div
+        ref={overlayRef}
+        className="fixed inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-50 text-white"
+        onClick={handleInteraction}
+        onKeyDown={(e) => {
+          console.log("Key Pressed:", e.key); // Debugging
+          handleInteraction();
+        }}
+        tabIndex={0}
+      >
+        <h1> Click or Press Any Key to Start</h1>
+      </div>
+    );
+  }
 
     return (
       <div className="min-h-screen md:h-full bg-gray-900 text-white">

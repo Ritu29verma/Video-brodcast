@@ -13,15 +13,15 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/homepage" element={<PrivateRoute role="client"><Client /></PrivateRoute>}  />
+        
         <Route path="/" element={<PrivateRoute><Client /></PrivateRoute>}  />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/admin/login" element={<Login />} />
+        <Route path="/admin/register" element={<Register />} />
         <Route path="/login-client" element={<LoginUser />} />
         <Route path="/game" element={<GameResults/>} />
 
-        <Route path="/admin" element={<Admin/>} />
-        <Route path="/main" element={<PrivateRoute ><FinalAdmin/></PrivateRoute>} />
+        <Route path="/hidden123/avi-video" element={<Admin/>} />
+        <Route path="/admin" element={<PrivateRoute ><FinalAdmin/></PrivateRoute>} />
          </Routes>
          <ToastContainer autoClose={600} />
       
