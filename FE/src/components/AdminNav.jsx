@@ -31,7 +31,7 @@ const AdminNav = () => {
     const handleLogout = () => {
       sessionStorage.removeItem("token");
       sessionStorage.removeItem("role")
-      navigate("/login");
+      navigate("/admin/login");
       socket.emit('admin_logout');
     };
 
