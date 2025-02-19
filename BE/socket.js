@@ -66,9 +66,8 @@ const generateNumericGameId = async () => {
 const socketHandler  = (server) => {
    io = socketIo(server, {
     cors: {
-      origin: process.env.SOCKET_URL,
+      origin: '*',
       methods: ['GET', 'POST'],
-      credentials: true,
     },
   });
 

@@ -66,10 +66,8 @@ const initializeApp = async () => {
   app.use('/api/client', userRoutes);
   app.use('/api/game', gameRoutes);
   socketHandler(server);
-
   server.listen(PORT, async () => {
     console.log(`Server is running on ${PORT}`);
-     await launchPuppeteer();
   });
 };
 

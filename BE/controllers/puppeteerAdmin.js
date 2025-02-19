@@ -8,6 +8,8 @@ const launchPuppeteer = async () => {
     const browser = await puppeteer.launch({
         headless: true, // Set to true to hide the browser window
         args: [
+	  '--no-sandbox',
+	  '--disable-setuid-sandbox',
           '--start-maximized', // This argument can be ignored in headless mode
         ],
       });
