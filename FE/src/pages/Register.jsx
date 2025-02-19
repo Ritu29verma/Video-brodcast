@@ -62,7 +62,7 @@ const Register = () => {
         toast.success("Sign up successful");
         
         setTimeout(() => {
-          navigate("/login");
+          navigate("/admin/login");
         }, 1500);
 
       }
@@ -175,7 +175,7 @@ const Register = () => {
           Already have an account?{" "}
           <span
             className="text-blue-400 cursor-pointer hover:underline"
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("/admin/login")}
           >
             Log in
           </span>

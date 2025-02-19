@@ -61,7 +61,7 @@ const Login = () => {
         setTimeout(() => {
           const role = sessionStorage.getItem("role");
           if (role === "admin") {
-            navigate("/main");  
+            navigate("/admin");  
           } else {
             navigate("/unauthorized");  
           }
@@ -144,7 +144,7 @@ const Login = () => {
           Don't have an account?{" "}
           <span
             className="text-blue-400 cursor-pointer hover:underline"
-            onClick={() => navigate("/register")}
+            onClick={() => navigate("/admin/register")}
           >
             Sign up
           </span>
