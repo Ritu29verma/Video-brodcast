@@ -45,7 +45,7 @@ const AdminNav = () => {
       {/* Right Section */}
       <div className="flex items-center space-x-4">
       <span className="text-green-400">
-          Wallet: Rs.{walletBalance}
+          Wallet: Rs.{walletBalance.toFixed(2)}
         </span>
       <button
         onClick={handleLogout}

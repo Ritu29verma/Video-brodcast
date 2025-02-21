@@ -204,7 +204,7 @@ const FinalAdmin = () => {
               ${stats.ProfitOrLoss >= 0 ? "bg-green-500" : "bg-red-600"} text-white`}>
               <span className="text-sm sm:text-base">Profit/Loss</span>
               <span className="text-lg sm:text-xl font-bold">
-                {stats.ProfitOrLoss >= 0 ? `+${stats.ProfitOrLoss.toFixed(2)}` : stats.ProfitOrLoss} ₹
+                {stats.ProfitOrLoss >= 0 ? `+${stats.ProfitOrLoss.toFixed(2)}` : stats.ProfitOrLoss.toFixed(2)} ₹
               </span>
             </div>
           </div>

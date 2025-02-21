@@ -85,7 +85,7 @@ const Navbar = ({ userId , isMuted, handleMuteToggle  }) => {
       <div className="flex items-center space-x-4">
         <span className="text-gray-400">User : {userId}</span>
         <span className="text-green-400">
-          Wallet: Rs.{walletAmount}
+          Wallet: Rs.{walletAmount.toFixed(2)}
         </span>
 
         {/* Mute/Unmute Button (Desktop) */}
