@@ -2,12 +2,32 @@ import React, { useState,useEffect } from "react";
 import socket from "../components/socket";
 import { toast } from 'react-toastify'; 
 
+const CashoutPopup = ({ multiplier, amount, onClose }) => {
+  return (
+    <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-2 py-2 rounded-full shadow-lg flex items-center">
+      <div className="mr-2 ml-2 text-base">
+        <p className="text-sm">You have cashed out!</p>
+        <p className="font-bold">{multiplier.toFixed(2)}x</p>
+      </div>
+      <div className="bg-green-500 px-2 py-2 rounded-lg text-base font-semibold">
+        Win Rs. {amount.toFixed(2)}
+      </div>
+      <button className="ml-2 mr-2 text-white font-semibold text-base" onClick={onClose}>
+        ✖
+      </button>
+    </div>
+  );
+};
+
+
+
 const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlaying }) => {
   const [currentMultiplier, setCurrentMultiplier] = useState(1);
   const [betAmount, setBetAmount] = useState(10);
   const [activeTab, setActiveTab] = useState("bet");
   const [userBet, setUserBet] = useState(null); 
   const [waitingForNextRound, setWaitingForNextRound] = useState(false);
+  const [cashoutData, setCashoutData] = useState(null);
 
   const betOptions = [100, 200, 500, 1000];
   const betOptionsMultiply = [1, 2, 5, 10];
@@ -74,7 +94,8 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
       const cashoutAmount = userBet * currentMultiplier;
       socket.emit("cashout", { clientCode, userBet, cashoutAmount,currentMultiplier});
       setUserBet(null);
-      toast.info(`Bet cashed out: ${cashoutAmount.toFixed(2)} Rs.`);
+      setCashoutData({ amount: cashoutAmount, multiplier: currentMultiplier });
+      setTimeout(() => setCashoutData(null), 3000);
     }
   };
 
@@ -115,6 +136,14 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
   }, []);
 
   return (
+    <>
+    {cashoutData && (
+      <CashoutPopup
+        multiplier={cashoutData.multiplier}
+        amount={cashoutData.amount}
+        onClose={() => setCashoutData(null)}
+      />
+    )}
     <div className="bg-gray-800 text-white rounded-lg shadow-lg p-1 w-full mx-auto">
      <div className="flex space-x-2 bg-gray-800 m-1">
       <div>
@@ -234,6 +263,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
         ))}
       </div> */}
     </div>
+    </>
   );
 };
 

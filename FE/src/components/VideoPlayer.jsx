@@ -257,30 +257,31 @@ useEffect(() => {
 
   return (
     <div className="flex flex-col items-center w-full">
-   <div className='relative'>
-   <video
-      ref={videoRef}
-      controls={false}
-      className="w-full h-full max-w-3xl rounded shadow-lg object-contain"
-      style={{ objectFit: 'contain', aspectRatio: '16/9' }}
-      autoPlay
-    />
-    {loading && (
-          <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
+      <div className="relative w-full max-w-3xl">
+        <video
+          ref={videoRef}
+          controls={false}
+          className="w-full h-full rounded shadow-lg object-contain"
+          style={{ objectFit: 'contain', aspectRatio: '16/9' }}
+          autoPlay
+        />
+        
+        {loading && (
+          <div className="absolute top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50">
             <span className="text-white font-bold text-2xl">Loading...</span>
           </div>
         )}
+  
         {!loading && showOverlay && (
-          <div className="absolute inset-0 bg-opacity-50 flex justify-center items-center">
+          <div className="absolute top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50">
             <span className="text-white font-bold text-5xl">{currentMultiplier.toFixed(2)}x</span>
           </div>
         )}
-         <Muted
-      isMuted={isMuted} 
-      handleMuteToggle={handleMuteToggle} 
-    />
-   </div>
-        </div>
+  
+        <Muted isMuted={isMuted} handleMuteToggle={handleMuteToggle} />
+      </div>
+    </div>
   );
+  
 };
 export default VideoPlayer;

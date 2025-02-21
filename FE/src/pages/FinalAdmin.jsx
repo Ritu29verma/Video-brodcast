@@ -111,7 +111,7 @@ const FinalAdmin = () => {
     return (
       <div
         ref={overlayRef}
-        className="fixed inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-50 text-white"
+        className="fixed inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-50 text-white text-3xl font-bold tracking-wide"
         onClick={handleInteraction}
         onKeyDown={(e) => {
           console.log("Key Pressed:", e.key); // Debugging
@@ -119,7 +119,7 @@ const FinalAdmin = () => {
         }}
         tabIndex={0}
       >
-        <h1> Click or Press Any Key to Start</h1>
+        <h1 className="text-2xl font-bold animate-pulse">Click or Press Any Key to Start</h1>
       </div>
     );
   }
@@ -204,7 +204,7 @@ const FinalAdmin = () => {
               ${stats.ProfitOrLoss >= 0 ? "bg-green-500" : "bg-red-600"} text-white`}>
               <span className="text-sm sm:text-base">Profit/Loss</span>
               <span className="text-lg sm:text-xl font-bold">
-                {stats.ProfitOrLoss >= 0 ? `+${stats.ProfitOrLoss}` : stats.ProfitOrLoss} ₹
+                {stats.ProfitOrLoss >= 0 ? `+${stats.ProfitOrLoss.toFixed(2)}` : stats.ProfitOrLoss} ₹
               </span>
             </div>
           </div>

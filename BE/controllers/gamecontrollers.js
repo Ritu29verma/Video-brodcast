@@ -84,3 +84,24 @@ exports.checkgameId =  async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+
+exports.getmultipliers = async (req, res) => {
+  try {
+    const latestGames = await Game.findAll({
+      attributes: ['coinReach'], // Fetch only coinReach
+      order: [['createdAt', 'DESC']],
+      limit: 20,
+    });
+
+    const multipliers = latestGames
+      .map(game => game.coinReach);
+
+
+    res.json({ multipliers });
+  } catch (error) {
+    console.error('Error fetching latest games:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+

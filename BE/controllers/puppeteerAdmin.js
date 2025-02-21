@@ -20,7 +20,7 @@ const launchPuppeteer = async () => {
         const screenDimensions = { width: 1920, height: 1080 }; // Default to a standard screen size
         await page.setViewport(screenDimensions);
 
-        // Navigate to admin page
+
         await page.goto(`${process.env.SOCKET_URL}/hidden123/avi-video`, { waitUntil: 'networkidle2' });
 
         // Wait for the video element to load and start playing (important!)

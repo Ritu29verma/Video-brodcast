@@ -212,7 +212,7 @@ const AdminTabSection = () => {
                 <span className="text-white">{entry.totalInGame} ₹</span>
                 <span className="text-white">{entry.cashout} ₹</span>
                 <span className={`text-${entry.profitLoss >= 0 ? 'green-400' : 'red-500'} font-semibold`}>
-                {entry.profitLoss} ₹
+                {(Number(entry.profitLoss) || 0).toFixed(2)} ₹
                 </span>
             </div>
             ))
