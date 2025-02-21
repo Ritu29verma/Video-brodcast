@@ -19,6 +19,22 @@ const CashoutPopup = ({ multiplier, amount, onClose }) => {
   );
 };
 
+const LossPopup = ({ multiplier, amount, onClose }) => {
+  return (
+    <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-2 py-2 rounded-full shadow-lg flex items-center">
+      <div className="mr-2 ml-2 text-base">
+        <p className="text-sm">You could not cashout!</p>
+        <p className="font-bold">{multiplier.toFixed(2)}x</p>
+      </div>
+      <div className="bg-red-500 px-2 py-2 rounded-lg text-base font-semibold">
+        Loss Rs. {amount.toFixed(2)}
+      </div>
+      <button className="ml-2 mr-2 text-white font-semibold text-base" onClick={onClose}>
+        ✖
+      </button>
+    </div>
+  );
+};
 
 
 const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlaying }) => {
@@ -28,7 +44,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
   const [userBet, setUserBet] = useState(null); 
   const [waitingForNextRound, setWaitingForNextRound] = useState(false);
   const [cashoutData, setCashoutData] = useState(null);
-
+  const [lossData,setLossData]= useState(null)
   const betOptions = [100, 200, 500, 1000];
   const betOptionsMultiply = [1, 2, 5, 10];
   const [lastClicked, setLastClicked] = useState(null);
@@ -122,7 +138,10 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
 
   useEffect(() => {
     if (isThirdVideoPlaying && userBet !== null && !waitingForNextRound) {
-      setUserBet(null)   
+      setLossData({ amount: userBet, multiplier: currentMultiplier });
+      setTimeout(() => setLossData(null), 3000);
+      setUserBet(null) 
+
     }
   }, [isThirdVideoPlaying]);
 
@@ -142,6 +161,13 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
         multiplier={cashoutData.multiplier}
         amount={cashoutData.amount}
         onClose={() => setCashoutData(null)}
+      />
+    )}
+    {lossData && (
+      <LossPopup
+        multiplier={lossData.multiplier}
+        amount={lossData.amount}
+        onClose={() => setLossData(null)}
       />
     )}
     <div className="bg-gray-800 text-white rounded-lg shadow-lg p-1 w-full mx-auto">
