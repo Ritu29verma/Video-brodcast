@@ -186,7 +186,7 @@ const FinalAdmin = () => {
           </div>
          </div>
           <div className="w-full h-full bg-black p-4 sm:p-6 rounded-lg shadow-lg flex flex-col items-center">
-          <VideoPlayer />
+          <VideoPlayer hasInteracted={hasInteracted} setHasInteracted={setHasInteracted} />
           </div>
            {/* Game Stats Section */}
            <div className="grid grid-cols-3 gap-4 mt-6 w-full px-4">

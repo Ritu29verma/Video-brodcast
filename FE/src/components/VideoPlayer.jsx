@@ -2,10 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import socket from "../components/socket";
 import Muted from "../components/Muted"
 
-const VideoPlayer = () => {
+const VideoPlayer = ({ hasInteracted, setHasInteracted }) => {
   const videoRef = useRef(null);
   const [videoUrl, setVideoUrl] = useState(null);
-  const [hasInteracted, setHasInteracted] = useState(false); 
   const [videoState, setVideoState] = useState(null);
   const [videoList, setVideoList] = useState([]);
   const [showOverlay, setShowOverlay] = useState(false);
@@ -65,35 +64,41 @@ const VideoPlayer = () => {
       const videoElement = videoRef.current;
   
       if (videoElement && state.url) {
-        if (videoElement.src !== state.url) {  // Prevent redundant updates
+        if (videoElement.src !== state.url) {
           setLoading(true);
+          videoElement.pause();
           videoElement.src = state.url;
-          videoElement.currentTime = state.currentTime || 0;
+          videoElement.load();
   
-          videoElement.onloadeddata = () => {
+          videoElement.onloadeddata = () => {  //  <-- ADD THIS
             setLoading(false);
             if (state.isPlaying) {
-              videoElement.play().catch(err => console.error("Error playing video:", err));
+              const playPromise = videoElement.play();
+              if (playPromise) {
+                playPromise.catch(err => console.error("Error playing video:", err));
+              }
             }
           };
         } else if (state.isPlaying) {
-          videoElement.play().catch(err => console.error("Error resuming video:", err));
+          const playPromise = videoElement.play();
+              if (playPromise) {
+                playPromise.catch(err => console.error("Error playing video:", err));
+              }
         } else {
           videoElement.pause();
         }
   
-      //  videoElement.muted = isMuted;
-      }
+        setShowOverlay(prevState => {
+          const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4` ||
+                           state.url === `${import.meta.env.VITE_BASE_URL}/videos/video3.mp4`;
   
-      setShowOverlay(prevState => {
-        const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4` ||
-                         state.url === `${import.meta.env.VITE_BASE_URL}/videos/video3.mp4`;
-      
-        return newState;
-      });
+          return newState;
+        });
+      }
     });
     return () => socket.off("admin_control");
-  }, [isMuted]); // ✅ Track client's mute state
+  }, [isMuted]);
+  
   
   
 
@@ -120,7 +125,9 @@ useEffect(() => {
 
     const videoElement = videoRef.current;
     if (videoElement && videoElement.src !== state.url) {
+      videoElement.pause();
       videoElement.src = state.url;
+      videoElement.load();
       videoElement.currentTime = state.currentTime || 0;
       //videoElement.muted = state.isMuted || false;
 
@@ -141,28 +148,31 @@ useEffect(() => {
   const handleUserInteraction = () => {
     if (!hasInteracted) {
       setHasInteracted(true);
-
+  
       // Request the latest admin state upon interaction
       socket.emit('fetch_current_state', {} , (state) => {
         console.log('Fetched current state from admin:', state);
         setShowOverlay(prevState => {
           const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4` ||
                            state.url === `${import.meta.env.VITE_BASE_URL}/videos/video3.mp4`;
-        
+  
           return newState;
         });
-
+  
         const videoElement = videoRef.current;
         if (videoElement && state) {
           videoElement.src = state.url;
           videoElement.currentTime = state.currentTime || 0;
          // videoElement.muted = state.isMuted || false;
-
+  
           // Start video playback if admin is playing
           if (state.isPlaying) {
-            videoElement
-              .play()
-              .catch((err) => console.error('Playback error on interaction:', err));
+            const playPromise = videoElement.play();  // <-- Capture the Promise
+            if (playPromise) {
+              playPromise
+                .then(() => console.log("Playback started after interaction"))
+                .catch((err) => console.error('Playback error on interaction:', err));
+            }
           } else {
             videoElement.pause();
           }
@@ -171,25 +181,17 @@ useEffect(() => {
     }
   };
   
-  const attemptPlay = () => {
-    const videoElement = videoRef.current;
-    if (videoElement) {
-      videoElement
-        .play()
-        .catch(err => console.warn("Autoplay prevented. Waiting for user interaction."));
-    }
-  };
   
-  // Call this on user interaction
   useEffect(() => {
-    window.addEventListener("click", attemptPlay);
-    window.addEventListener("keydown", attemptPlay);
-  
-    return () => {
-      window.removeEventListener("click", attemptPlay);
-      window.removeEventListener("keydown", attemptPlay);
-    };
-  }, []);
+    if (hasInteracted) {
+      const videoElement = videoRef.current;
+      if (videoElement) {
+        videoElement.play().catch(err => console.warn("Autoplay prevented:", err));
+      }
+    }
+  }, [hasInteracted]); 
+
+
   // Sync video playback position with the admin's current time
   useEffect(() => {
     const videoElement = videoRef.current;
