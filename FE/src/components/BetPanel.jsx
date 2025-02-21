@@ -7,7 +7,7 @@ const CashoutPopup = ({ multiplier, amount, onClose }) => {
     <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-2 py-2 rounded-full shadow-lg flex items-center">
       <div className="mr-2 ml-2 text-base">
         <p className="text-sm">You have cashed out!</p>
-        <p className="font-bold">{multiplier.toFixed(2)}x</p>
+        <p className="flex font-bold justify-center">{multiplier.toFixed(2)}x</p>
       </div>
       <div className="bg-green-500 px-2 py-2 rounded-lg text-base font-semibold">
         Win Rs. {amount.toFixed(2)}
@@ -24,7 +24,7 @@ const LossPopup = ({ multiplier, amount, onClose }) => {
     <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-2 py-2 rounded-full shadow-lg flex items-center">
       <div className="mr-2 ml-2 text-base">
         <p className="text-sm">You could not cashout!</p>
-        <p className="font-bold">{multiplier.toFixed(2)}x</p>
+        <p className="flex font-bold justify-center">{multiplier.toFixed(2)}x</p>
       </div>
       <div className="bg-red-500 px-2 py-2 rounded-lg text-base font-semibold">
         Loss Rs. {amount.toFixed(2)}
