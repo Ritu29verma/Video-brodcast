@@ -57,7 +57,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
         if (response.success) {
           setUserBet(betAmount);
           setWaitingForNextRound(false);
-          toast.success(`Bet placed successfully: ${betAmount} Rs.`);
+          // toast.success(`Bet placed successfully: ${betAmount} Rs.`);
         } else {
           setUserBet(null);
           setWaitingForNextRound(false);
@@ -107,7 +107,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
       socket.emit("placeBet", { clientCode, betAmount: userBet }, (response) => {
         if (response.success) {
           setWaitingForNextRound(false);
-          toast.success(`Bet placed successfully: ${betAmount} Rs.`);
+          // toast.success(`Bet placed successfully: ${betAmount} Rs.`);
         } else {
           setUserBet(null)
           setWaitingForNextRound(false);
