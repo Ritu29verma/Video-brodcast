@@ -63,7 +63,7 @@ const VideoPlayerAdmin = () => {
                     isMuted: videoRef.current.muted || false,
                 };
                 socket.emit('admin_control', updatedState);
-            }, 100);
+            }, 500);
             return () => clearInterval(interval);
         }
     }, [currentState.isPlaying, currentState.url]);
