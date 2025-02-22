@@ -97,7 +97,7 @@ const Client = () => {
   }
 
   // Determine how many multipliers to show based on screen size
-  const displayMultipliers = screenSize < 640 ? 8 : 17;
+  const displayMultipliers = screenSize < 640 ? 8 : 10;
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">

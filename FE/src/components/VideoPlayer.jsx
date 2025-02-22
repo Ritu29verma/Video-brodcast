@@ -9,8 +9,11 @@ const VideoPlayer = ({ hasInteracted, setHasInteracted }) => {
   const [videoList, setVideoList] = useState([]);
   const [showOverlay, setShowOverlay] = useState(false);
   const [currentMultiplier, setCurrentMultiplier] = useState(1.00);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+
   const [isMuted, setIsMuted] = useState(false); 
+  
+
 
   const handleMuteToggle = () => {
     const videoElement = videoRef.current;
@@ -65,13 +68,16 @@ const VideoPlayer = ({ hasInteracted, setHasInteracted }) => {
   
       if (videoElement && state.url) {
         if (videoElement.src !== state.url) {
-          setLoading(true);
+          // setLoading(true);
           videoElement.pause();
           videoElement.src = state.url;
           videoElement.load();
   
           videoElement.onloadeddata = () => {  //  <-- ADD THIS
-            setLoading(false);
+          
+            // setLoading(false)
+            
+           
             if (state.isPlaying) {
               const playPromise = videoElement.play();
               if (playPromise) {

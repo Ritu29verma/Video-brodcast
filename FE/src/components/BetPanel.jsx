@@ -4,12 +4,12 @@ import { toast } from 'react-toastify';
 
 const CashoutPopup = ({ multiplier, amount, onClose }) => {
   return (
-    <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-2 py-2 rounded-full shadow-lg flex items-center">
+    <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-yellow-600 text-white px-2 py-2 rounded-full shadow-lg flex items-center">
       <div className="mr-2 ml-2 text-base">
         <p className="text-sm">You have cashed out!</p>
         <p className="flex font-bold justify-center">{multiplier.toFixed(2)}x</p>
       </div>
-      <div className="bg-green-500 px-2 py-2 rounded-lg text-base font-semibold">
+      <div className="bg-yellow-500 px-2 py-2 rounded-lg text-base font-semibold">
         Win Rs. {amount.toFixed(2)}
       </div>
       <button className="ml-2 mr-2 text-white font-semibold text-base" onClick={onClose}>
@@ -19,27 +19,27 @@ const CashoutPopup = ({ multiplier, amount, onClose }) => {
   );
 };
 
-const LossPopup = ({ multiplier, amount, onClose }) => {
-  return (
-    <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-2 py-2 rounded-full shadow-lg flex items-center">
-      <div className="mr-2 ml-2 text-base">
-        <p className="text-sm">You could not cashout!</p>
-        <p className="flex font-bold justify-center">{multiplier.toFixed(2)}x</p>
-      </div>
-      <div className="bg-red-500 px-2 py-2 rounded-lg text-base font-semibold">
-        Loss Rs. {amount.toFixed(2)}
-      </div>
-      <button className="ml-2 mr-2 text-white font-semibold text-base" onClick={onClose}>
-        ✖
-      </button>
-    </div>
-  );
-};
+// const LossPopup = ({ multiplier, amount, onClose }) => {
+//   return (
+//     <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-2 py-2 rounded-full shadow-lg flex items-center">
+//       <div className="mr-2 ml-2 text-base">
+//         <p className="text-sm">You could not cashout!</p>
+//         <p className="flex font-bold justify-center">{multiplier.toFixed(2)}x</p>
+//       </div>
+//       <div className="bg-red-500 px-2 py-2 rounded-lg text-base font-semibold">
+//         Loss Rs. {amount.toFixed(2)}
+//       </div>
+//       <button className="ml-2 mr-2 text-white font-semibold text-base" onClick={onClose}>
+//         ✖
+//       </button>
+//     </div>
+//   );
+// };
 
 
 const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlaying }) => {
   const [currentMultiplier, setCurrentMultiplier] = useState(1);
-  const [betAmount, setBetAmount] = useState(10);
+  const [betAmount, setBetAmount] = useState(100);
   const [activeTab, setActiveTab] = useState("bet");
   const [userBet, setUserBet] = useState(null); 
   const [waitingForNextRound, setWaitingForNextRound] = useState(false);
@@ -67,8 +67,12 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
   const handlePlaceBet = () => {
     const clientCode = sessionStorage.getItem("client_code"); 
     if (isFirstVideoPlaying) {
-      setUserBet(betAmount);
-      setWaitingForNextRound(false);
+      if (betAmount<100){
+        toast.error("Cannot place bet for amount less than 100!")
+        return;
+      }
+      // setUserBet(betAmount);
+      // setWaitingForNextRound(false);
       socket.emit("placeBet", { clientCode, betAmount }, (response) => {
         if (response.success) {
           setUserBet(betAmount);
@@ -120,6 +124,11 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
       // toast.info(`Bet auto-placed from last round: ${userBet} Rs.`);
     const clientCode = sessionStorage.getItem("client_code");
     if (clientCode) {
+      if (userBet<100){
+        toast.error("Cannot place bet for amount less than 100!")
+        return;
+      }
+      else{
       socket.emit("placeBet", { clientCode, betAmount: userBet }, (response) => {
         if (response.success) {
           setWaitingForNextRound(false);
@@ -130,6 +139,7 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
           toast.error(response.message);
         }
       });
+    }
     }  
     }
   }, [isFirstVideoPlaying]);
@@ -163,13 +173,13 @@ const BetButton = ({ isFirstVideoPlaying, isSecondVideoPlaying, isThirdVideoPlay
         onClose={() => setCashoutData(null)}
       />
     )}
-    {lossData && (
+    {/* {lossData && (
       <LossPopup
         multiplier={lossData.multiplier}
         amount={lossData.amount}
         onClose={() => setLossData(null)}
       />
-    )}
+    )} */}
     <div className="bg-gray-800 text-white rounded-lg shadow-lg p-1 w-full mx-auto">
      <div className="flex space-x-2 bg-gray-800 m-1">
       <div>
