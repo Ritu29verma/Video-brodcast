@@ -197,7 +197,7 @@ const FinalAdmin = () => {
 
             <div className="bg-green-600 text-white p-2 rounded-lg shadow-md flex flex-col items-center">
               <span className="text-sm sm:text-base">Cashouts</span>
-              <span className="text-lg sm:text-xl font-bold">₹{stats.Cashouts}</span>
+              <span className="text-lg sm:text-xl font-bold">₹{stats.Cashouts.toFixed(2)}</span>
             </div>
 
             <div className={`p-2 rounded-lg shadow-md flex flex-col items-center 
