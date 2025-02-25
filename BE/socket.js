@@ -5,6 +5,65 @@ const Game = require('./models/Game');
 const UserGameResults = require('./models/UserGameResult')
 const GameRangeSettings = require('./models/GameRangeSettings')
 const AdminWallet = require('./models/Adminwallet')
+const Stats = require("./models/stats")
+
+const updateIngame = async (amount) => {
+  try {
+    // Get the current date and set time to 00:00:00.000
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    // Check if a document exists for the current date
+    let statsDoc = await Stats.findOne({
+      where: { date: currentDate }  
+    });
+
+    if (statsDoc) {
+      // Update the total amount for the existing document
+      statsDoc.totalAmount += amount;
+      await statsDoc.save();
+    } else {
+      // Create a new document for the current date
+      statsDoc = await Stats.create({
+        date: currentDate,
+        totalAmount: amount,
+      });
+      console.log("In-game stats updated:", amount);
+    }
+  } catch (error) {
+    console.error("Error updating purchased amount:", error);
+  }
+};
+
+const updateProfit = async (amount) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let record = await Stats.findOne({ where: { date: today } });
+
+  if (!record) {
+    record = await Stats.create({ date: today, profit: 0, loss: 0, totalAmount: 0 });
+  }
+
+  record.profit += amount;
+  await record.save();
+};
+
+const updateLoss = async (amount) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let record = await Stats.findOne({ where: { date: today } });
+
+  if (!record) {
+    record = await Stats.create({ date: today, profit: 0, loss: 0, totalAmount: 0 });
+  }
+
+  record.loss += amount;
+  await record.save();
+};
+
+
 dotenv.config();
 let tempGameData = null;
 const userSockets = {};
@@ -28,16 +87,18 @@ async function getOrCreateAdminWallet() {
 
       if (!adminWallet) {
           // If no wallet exists, create one with a 0 balance
-          adminWallet = await AdminWallet.create({ balance: 0.0 });
+          adminWallet = await AdminWallet.create({ balance: 0.0, reservePercentage: 10 }); //default percentage will be 10
       }
 
       return adminWallet;
   } catch (error) {
       console.error("Error fetching admin wallet:", error);
       // Create a new entry if an error occurs
-      return await AdminWallet.create({ balance: 0.0 });
+      return await AdminWallet.create({ balance: 0.0, reservePercentage: 10 });
   }
 }
+let adminWallet;
+
 
 function roundToNearestPoint05(value) {
   return Math.round(value / 0.05) * 0.05;
@@ -87,7 +148,7 @@ const socketHandler  = (server) => {
       methods: ['GET', 'POST'],
     },
   });
-
+  
   io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
   
@@ -120,8 +181,10 @@ const socketHandler  = (server) => {
       clearInterval(multiplierInterval);
     }
 
-    let adminWallet = await getOrCreateAdminWallet();
+    adminWallet = await getOrCreateAdminWallet();
     let adminBalance = adminWallet.balance;
+    let reservePercentage = adminWallet.reservePercentage;
+    io.emit("reservePercentage",reservePercentage);
     let numberOfUsers = Object.keys(activeBets).length;
     let totalBets = tempGameData.totalInGame
     multiplier = 1.0;
@@ -129,14 +192,22 @@ const socketHandler  = (server) => {
       if (numberOfUsers === 0) {
         coinReach = roundToNearestPoint05(Math.random() * (25 - 1) + 1).toFixed(2); // Random between 1 to 25
         console.log("No users betting, setting random coinReach:", coinReach);
+        let safeLimit = (adminBalance) * (1-(reservePercentage / 100).toFixed(2)) ;
+        io.emit("reservedAmount",adminBalance*(reservePercentage / 100).toFixed(2))
+        io.emit("PayableAmount",safeLimit);
       } else{
           if (adminBalance - totalBets == 0) {
             coinReach = 1.0;
+            io.emit("reservedAmount",adminBalance)
+            io.emit("PayableAmount",0.00);
             console.log("admin bankrupt")
           } 
           else if (!isGameRangesOn) {
             let expectedPayout = totalBets * 10; // Assume worst case: 10x avg multiplier
-            let safeLimit = (adminBalance) * 0.9; // Admin must keep 10% balance
+            let safeLimit = (adminBalance) * (1-(reservePercentage / 100).toFixed(2)) ;
+            io.emit("reservedAmount",adminBalance*(reservePercentage / 100).toFixed(2))
+            io.emit("PayableAmount",safeLimit);
+            
             let maxAllowedMultiplier = Math.max(1.0, Math.min(10, safeLimit / expectedPayout));
             coinReach = roundToNearestPoint05(Math.random() * (maxAllowedMultiplier - 1) + 1).toFixed(2);
 
@@ -182,7 +253,15 @@ const socketHandler  = (server) => {
 
   socket.on('video_change', async (state) => {
     videoState = { ...state, currentTime: 0 };
+    adminWallet = await getOrCreateAdminWallet();
+    let reservePercentage = adminWallet.reservePercentage;
+    let adminBalance = adminWallet.balance;
+    io.emit("reservePercentage",reservePercentage);
+    let safeLimit = (adminBalance) * (1-(reservePercentage / 100).toFixed(2)) ;
+    io.emit("reservedAmount",adminBalance*(reservePercentage / 100).toFixed(2))
+    io.emit("PayableAmount",safeLimit);
     console.log('Admin changed video:', videoState.url);
+
     if (state.url === `${process.env.BASE_URL}/videos/Begin.mp4`){
       tempGameData = {
       gameId: await generateNumericGameId(),
@@ -197,11 +276,17 @@ const socketHandler  = (server) => {
       io.emit("activeClientsCount", activeClientsCount);
     }
     if (state.url === `${process.env.BASE_URL}/videos/video3.mp4`) {
-      console.log(activeBets)
+    
       if (tempGameData) {
         tempGameData.coinReach = coinReach;
         tempGameData.profitLoss = tempGameData.totalInGame - tempGameData.cashout;
         io.emit('stats',tempGameData)
+        await updateIngame(tempGameData.totalInGame)
+        if (tempGameData.profitLoss > 0) {
+          await updateProfit(tempGameData.profitLoss);
+        } else if (tempGameData.profitLoss < 0) {
+          await updateLoss(Math.abs(tempGameData.profitLoss)); 
+        }
         try {
           await Game.create(tempGameData);
           io.emit('gameData', tempGameData);
@@ -297,6 +382,7 @@ const socketHandler  = (server) => {
         if (!tempGameData.totalInGame) tempGameData.totalInGame = 0;
         tempGameData.totalInGame += betAmount;
         await updateAdminWalletBalance(betAmount, io); 
+        
         const bet = { code: clientCode, amount: betAmount, cashout:0};
         if (!activeBets[clientCode]) {
           activeBets[clientCode] = [];
@@ -320,6 +406,25 @@ const socketHandler  = (server) => {
     }   
 
   });
+
+  socket.on("updateReservePercentage", async (newPercentage) => {
+    if (isNaN(newPercentage) || newPercentage < 0 || newPercentage > 100) {
+      console.error("Invalid reserve percentage value:", newPercentage);
+      return;
+    }
+  
+    try {
+      let adminWallet = await getOrCreateAdminWallet();
+      adminWallet.reservePercentage = newPercentage;
+      await adminWallet.save();
+  
+      console.log(`Updated reserve percentage to: ${newPercentage}%`);
+      io.emit("reservePercentage", newPercentage); // Notify all clients
+    } catch (error) {
+      console.error("Error updating reserve percentage:", error);
+    }
+  });
+  
 
   socket.on("cancelBet", async ({ clientCode, betAmount }) => {
     if (!clientCode || !betAmount) return;

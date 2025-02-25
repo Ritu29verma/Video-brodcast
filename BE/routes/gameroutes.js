@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const {getGames,getAllgameResults,getUsergameResults,getGameRanges,postGameRange,editgameRange,deleteGameRange,checkgameId,getmultipliers} = require('../controllers/gamecontrollers'); 
+const {getGames,getAllgameResults,getUsergameResults,getGameRanges,postGameRange,editgameRange,deleteGameRange,checkgameId,getmultipliers,getAllgameResultsdate,getGamesdate} = require('../controllers/gamecontrollers'); 
 
 router.get('/get-games', getGames);
+router.get('/get-games-date', getGamesdate);
+
 router.get('/get-all-gameResults', getAllgameResults);
+router.get('/get-all-gameResults-date', getAllgameResultsdate);
+
 router.get('/get-user-gameResults', getUsergameResults);
 router.get('/get-gameRanges', getGameRanges);
 router.get('/get-multipliers', getmultipliers);

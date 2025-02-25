@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
 const Admin = require("../models/Admin");
 const AdminWallet = require('../models/Adminwallet')
-
+const Stats = require('../models/stats')
+const { Op } = require('sequelize');
 exports.registerAdmin = async (req, res) => {
     try {
       const { phoneNo, countryCode, password } = req.body;
@@ -72,5 +73,48 @@ exports.getadminBalance =  async (req, res) => {
       res.json(wallet.balance);
   } catch (error) {
       res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+};
+
+
+
+exports.statsSummary = async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.query;
+
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ error: 'fromDate and toDate are required' });
+    }
+
+    const startDate = new Date(fromDate);
+    const endDate = new Date(toDate);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return res.status(400).json({ error: 'Invalid date format' });
+    }
+
+    const result = await Stats.findOne({
+      attributes: [
+        [Stats.sequelize.fn('SUM', Stats.sequelize.col('profit')), 'totalProfit'],
+        [Stats.sequelize.fn('SUM', Stats.sequelize.col('loss')), 'totalLoss'],
+        [Stats.sequelize.fn('SUM', Stats.sequelize.col('totalAmount')), 'totalInGameAmount'],
+      ],
+      where: {
+        date: {
+          [Op.between]: [startDate, endDate],
+        },
+      },
+      raw: true, // Returns plain JSON instead of a Sequelize model instance
+    });
+
+    res.json({
+      totalProfit: result.totalProfit || 0,
+      totalLoss: result.totalLoss || 0,
+      totalInGameAmount: result.totalInGameAmount || 0,
+    });
+
+  } catch (error) {
+    console.error('Error fetching stats summary:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };

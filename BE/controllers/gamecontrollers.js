@@ -1,7 +1,7 @@
 const Game = require('../models/Game'); 
 const UserGameResults = require('../models/UserGameResult')
 const GameRangeSettings = require('../models/GameRangeSettings')
-
+const { Op } = require('sequelize');
 exports.getGames = async (req, res) => {
   try {
     const games = await Game.findAll({
@@ -40,6 +40,51 @@ exports.getAllgameResults =  async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+exports.getGamesdate = async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.query;
+      const whereClause = {};
+
+      if (fromDate && toDate) {
+        whereClause.createdAt = {
+          [Op.between]: [new Date(fromDate), new Date(toDate + 'T23:59:59.999Z')],
+        };
+      }
+    const games = await Game.findAll({
+      where: whereClause,
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.status(200).json({ success: true, data: games });
+  } catch (error) {
+    console.error('Error fetching games:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+}
+
+exports.getAllgameResultsdate = async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.query;
+    const whereClause = {};
+
+    if (fromDate && toDate) {
+      whereClause.createdAt = {
+        [Op.between]: [new Date(fromDate), new Date(toDate + 'T23:59:59.999Z')], // add T00:00:00.000Z to include the whole day
+      };
+    }
+
+    const results = await UserGameResults.findAll({
+      where: whereClause,
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(results);
+  } catch (error) {
+    console.error("Error fetching game results:", error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
 
 
 exports.getGameRanges = async (req, res) => {
