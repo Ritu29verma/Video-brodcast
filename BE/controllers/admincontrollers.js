@@ -3,6 +3,8 @@ const Admin = require("../models/Admin");
 const AdminWallet = require('../models/Adminwallet')
 const Stats = require('../models/stats')
 const { Op } = require('sequelize');
+const { getIO } = require("../socket")
+
 exports.registerAdmin = async (req, res) => {
     try {
       const { phoneNo, countryCode, password } = req.body;
@@ -116,5 +118,34 @@ exports.statsSummary = async (req, res) => {
   } catch (error) {
     console.error('Error fetching stats summary:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+exports.withdrawAmount = async (req, res) => {
+  try {
+    const { amount } = req.body;
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: 'Invalid amount' });
+    }
+
+    const adminWallet = await AdminWallet.findOne();
+    if (!adminWallet) {
+      return res.status(404).json({ message: 'Admin wallet not found' });
+    }
+
+    if (adminWallet.balance < amount) {
+      return res.status(400).json({ message: 'Insufficient balance' });
+    }
+
+    adminWallet.balance -= amount;
+    
+    await adminWallet.save();
+    const io = getIO();
+    io.emit("adminWalletUpdated", { adminWalletBalance: adminWallet.balance });
+    res.json({ message: 'Withdrawal successful', newBalance: adminWallet.balance });
+  } catch (error) {
+    console.error('Error withdrawing amount:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 };

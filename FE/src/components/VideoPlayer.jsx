@@ -63,6 +63,9 @@ const VideoPlayer = ({ hasInteracted, setHasInteracted }) => {
   // Listen for real-time updates from the admin
   useEffect(() => {
     socket.on("admin_control", (state) => {
+      if (state.url === `${import.meta.env.VITE_BASE_URL}/videos/video3.mp4`){
+        setCurrentMultiplier(state.multiplier)
+      }
       setVideoState(state);
       const videoElement = videoRef.current;
   
@@ -103,7 +106,7 @@ const VideoPlayer = ({ hasInteracted, setHasInteracted }) => {
       }
     });
     return () => socket.off("admin_control");
-  }, [isMuted]);
+  }, []);
   
   
   
@@ -156,8 +159,9 @@ useEffect(() => {
       setHasInteracted(true);
   
       // Request the latest admin state upon interaction
-      socket.emit('fetch_current_state', {} , (state) => {
+      socket.emit('fetch_current_state',{}, (state) => {
         console.log('Fetched current state from admin:', state);
+        
         setShowOverlay(prevState => {
           const newState = state.url === `${import.meta.env.VITE_BASE_URL}/videos/Middle_second.mp4` ||
                            state.url === `${import.meta.env.VITE_BASE_URL}/videos/video3.mp4`;

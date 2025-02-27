@@ -6,62 +6,11 @@ const UserGameResults = require('./models/UserGameResult')
 const GameRangeSettings = require('./models/GameRangeSettings')
 const AdminWallet = require('./models/Adminwallet')
 const Stats = require("./models/stats")
+const Sequence = require('./models/Sequence');
+const sequelize = require('./models/sequelize')
 
-const updateIngame = async (amount) => {
-  try {
-    // Get the current date and set time to 00:00:00.000
-    const currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0);
 
-    // Check if a document exists for the current date
-    let statsDoc = await Stats.findOne({
-      where: { date: currentDate }  
-    });
 
-    if (statsDoc) {
-      // Update the total amount for the existing document
-      statsDoc.totalAmount += amount;
-      await statsDoc.save();
-    } else {
-      // Create a new document for the current date
-      statsDoc = await Stats.create({
-        date: currentDate,
-        totalAmount: amount,
-      });
-      console.log("In-game stats updated:", amount);
-    }
-  } catch (error) {
-    console.error("Error updating purchased amount:", error);
-  }
-};
-
-const updateProfit = async (amount) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  let record = await Stats.findOne({ where: { date: today } });
-
-  if (!record) {
-    record = await Stats.create({ date: today, profit: 0, loss: 0, totalAmount: 0 });
-  }
-
-  record.profit += amount;
-  await record.save();
-};
-
-const updateLoss = async (amount) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  let record = await Stats.findOne({ where: { date: today } });
-
-  if (!record) {
-    record = await Stats.create({ date: today, profit: 0, loss: 0, totalAmount: 0 });
-  }
-
-  record.loss += amount;
-  await record.save();
-};
 
 
 dotenv.config();
@@ -99,6 +48,40 @@ async function getOrCreateAdminWallet() {
 }
 let adminWallet;
 
+const updateStats = async ({ totalAmount = 0, profit = 0, loss = 0 }) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+
+    let statsDoc = await Stats.findOne({ where: { date: today } });
+
+    if (!statsDoc) {
+      statsDoc = await Stats.create({
+        date: today,
+        totalAmount: 0,
+        profit: 0,
+        loss: 0,
+      });
+    }
+    
+
+    // Ensure both values are numbers
+    const currentTotalAmount = parseFloat(statsDoc.totalAmount);
+    const currentProfit = parseFloat(statsDoc.profit);
+    const currentLoss = parseFloat(statsDoc.loss);
+
+    statsDoc.totalAmount = parseFloat((currentTotalAmount + totalAmount).toFixed(2));
+    statsDoc.profit = parseFloat((currentProfit + profit).toFixed(2));
+    statsDoc.loss = parseFloat((currentLoss + loss).toFixed(2));
+    io.emit("DayStats",{profit:statsDoc.profit,loss:statsDoc.loss})
+    await statsDoc.save();
+
+    console.log("Stats updated:", { totalAmount, profit, loss });
+  } catch (error) {
+    console.error("Error updating stats:", error);
+  }
+};
 
 function roundToNearestPoint05(value) {
   return Math.round(value / 0.05) * 0.05;
@@ -124,21 +107,41 @@ async function updateAdminWalletBalance(amount, io) {
 }
 
 
-const generateNumericGameId = async () => {
-  let gameId;
-  let isUnique = false;
+const generateUniqueGameId = async () => {
+  const sequenceName = 'gameIdSequence'; // Unique name for the sequence
+  try {
+    // Use a transaction to ensure atomicity (critical!)
+    const result = await sequelize.transaction(async (t) => {
+      // 1. Find the sequence (or create if it doesn't exist)
+      const sequence = await Sequence.findOne({
+        where: { name: sequenceName },
+        transaction: t,
+      });
 
-  while (!isUnique) {
-    gameId = Math.floor(100000 + Math.random() * 900000);
-    // Check if the ID already exists in the database
-    const response = await fetch(`${process.env.BASE_URL}/api/game/check-gameId?gameId=${gameId}`);
-    const data = await response.json();
+      let nextValue;
+      if (sequence) {
+        // 2. Increment the sequence value atomically
+        sequence.value = sequence.value + 1;
+        await sequence.save({ transaction: t });
+        nextValue = sequence.value;
+      } else {
+        // Sequence doesn't exist, create it and start at the initial value
+        const newSequence = await Sequence.create(
+          { name: sequenceName, value: 1000000 },
+          { transaction: t }
+        );
+        nextValue = newSequence.value;
+      }
 
-    if (!data.exists) {
-      isUnique = true; // Unique ID found
-    }
+      return nextValue;
+    });
+
+    return result; 
+
+  } catch (error) {
+    console.error('Error generating unique gameId:', error);
+    throw error; // Re-throw the error to be handled elsewhere
   }
-  return gameId;
 };
 
 const socketHandler  = (server) => {
@@ -264,7 +267,7 @@ const socketHandler  = (server) => {
 
     if (state.url === `${process.env.BASE_URL}/videos/Begin.mp4`){
       tempGameData = {
-      gameId: await generateNumericGameId(),
+      gameId: await generateUniqueGameId(),
       coinReach: null ,
       totalInGame: 0,
       cashout: 0,
@@ -277,16 +280,11 @@ const socketHandler  = (server) => {
     }
     if (state.url === `${process.env.BASE_URL}/videos/video3.mp4`) {
     
-      if (tempGameData) {
+      if (tempGameData) { // Check if tempGameData exists
         tempGameData.coinReach = coinReach;
         tempGameData.profitLoss = tempGameData.totalInGame - tempGameData.cashout;
-        io.emit('stats',tempGameData)
-        await updateIngame(tempGameData.totalInGame)
-        if (tempGameData.profitLoss > 0) {
-          await updateProfit(tempGameData.profitLoss);
-        } else if (tempGameData.profitLoss < 0) {
-          await updateLoss(Math.abs(tempGameData.profitLoss)); 
-        }
+        io.emit('stats',tempGameData);
+        await updateStats({ totalAmount: tempGameData.totalInGame, profit: tempGameData.profitLoss > 0 ? tempGameData.profitLoss : 0, loss: tempGameData.profitLoss < 0 ? Math.abs(tempGameData.profitLoss) : 0 });
         try {
           await Game.create(tempGameData);
           io.emit('gameData', tempGameData);
@@ -352,8 +350,8 @@ const socketHandler  = (server) => {
   socket.emit('start_stream', videoState);
 
   socket.on('admin_control', (state) => {
-      currentVideoState = state;
-      socket.broadcast.emit('admin_control', state);
+      currentVideoState =state;
+      socket.broadcast.emit('admin_control', {...state,multiplier:multiplier});
   });
 
   socket.on('admin_video_state', (videoState) => {
@@ -362,8 +360,8 @@ const socketHandler  = (server) => {
   });
 
   socket.on('fetch_current_state', (callback) => {
-    const state = videoState;
-    console.log(`Providing 'current admin' state.`);
+    const state = {...videoState, multiplier : multiplier};
+    console.log(`Providing 'current admin' state. Multiplier: ${multiplier}`);
     socket.emit('fetch_current_state', state);
   });
     
@@ -555,5 +553,10 @@ const socketHandler  = (server) => {
 
 module.exports = {
   socketHandler,
-  getGameRangesState
+  getIO: () => {
+    if (!io) {
+      throw new Error("Socket.io not initialized!");
+    }
+    return io;
+  }
 };

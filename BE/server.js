@@ -12,7 +12,7 @@ const userRoutes = require('./routes/clientroutes');
 const gameRoutes = require('./routes/gameroutes');
 const sequelize = require('./models/sequelize');
 const launchPuppeteer = require('./controllers/puppeteerAdmin')
-const { getGameRangesState} = require("./socket")
+// const { getGameRangesState} = require("./socket")
 
 dotenv.config();
 
@@ -59,9 +59,9 @@ const initializeApp = async () => {
       res.status(200).json({ videos: videoFiles });
     });
   });
-  app.get("/api/get-gameRangesState", (req, res) => {
-    res.json({ isGameRangesOn: getGameRangesState() });
-  });
+  // app.get("/api/get-gameRangesState", (req, res) => {
+  //   res.json({ isGameRangesOn: getGameRangesState() });
+  // });
 
   app.use('/api/admin', adminRoutes);
   app.use('/api/client', userRoutes);
@@ -71,6 +71,7 @@ const initializeApp = async () => {
     console.log(`Server is running on ${PORT}`);
     await launchPuppeteer();
   });
+
 };
 
 initializeApp().catch((err) => {

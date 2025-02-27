@@ -2,16 +2,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import socket from "../components/socket";
 
-const AdminTabSection = () => {
+const AdminTabSection = ({ fromDate, toDate, today }) => {
   const [activeTab, setActiveTab] = useState('All Bets');
   const [logsData, setLogsData] = useState([]);
   const [allBetsData, setAllBetsData] = useState([]); 
-  const [gameId, setGameId] = useState(() => sessionStorage.getItem("gameId") || "N/A");
 
 
   const fetchAllBets = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/game/get-all-gameResults`);
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/game/get-all-gameResults-date?fromDate=${fromDate}&toDate=${toDate}`);
       const bets = response.data.map((bet) => {
         const createdAt = new Date(bet.createdAt);
         const formattedDateTime = `${createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} ${createdAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
@@ -34,7 +33,7 @@ const AdminTabSection = () => {
 
   const fetchGameData = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/game/get-games`);
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/game/get-games-date?fromDate=${fromDate}&toDate=${toDate}`);
       const games = response.data.data.map((game) => {
         const date = new Date(game.createdAt);
         const formattedDate = date.toLocaleString('en-GB', {
@@ -61,12 +60,17 @@ const AdminTabSection = () => {
     }
   };
   
+useEffect(()=>{
+  if (activeTab === 'All Bets') {fetchAllBets();}
+  if (activeTab === 'Logs') {fetchGameData(); }
 
+},[activeTab,fromDate,toDate])
   
   useEffect(() => {
+    if (toDate !== today) return;
     if (activeTab === 'All Bets') {
-      fetchAllBets();
       const handleGameResultAll = (newBet) => {
+        if (toDate != today ) return;
         console.log('all game:', newBet);
         const createdAt = new Date(newBet.createdAt);
         const formattedDateTime = `${createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} ${createdAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
@@ -93,9 +97,10 @@ const AdminTabSection = () => {
     }
 
     if (activeTab === 'Logs') {
-        fetchGameData(); // Fetch initial logs data
+        // Fetch initial logs data
       
         socket.on('gameData', (newGameData) => {
+          if (toDate != today ) return;
           setLogsData((prevLogs) => [
             {
               gameId: newGameData.gameId,
@@ -121,7 +126,7 @@ const AdminTabSection = () => {
       }
       
 
-  }, [activeTab]);
+  }, [activeTab,fromDate,toDate]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-180px)] bg-[#171858] rounded-md shadow-lg p-3 mt-2">

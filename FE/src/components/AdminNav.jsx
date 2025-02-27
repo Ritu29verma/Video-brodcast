@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import socket from "../components/socket";
 import { useNavigate } from 'react-router-dom';
+import WithdrawButton from "../components/WithdrawButton";
 
 const AdminNav = () => {
     const navigate = useNavigate();
@@ -47,6 +48,7 @@ const AdminNav = () => {
       <span className="text-green-400">
           Wallet: Rs.{walletBalance.toFixed(2)}
         </span>
+        <WithdrawButton/>
       <button
         onClick={handleLogout}
         className="bg-cyan-600 text-white hover:bg-white hover:text-cyan-600 transform transition-transform hover:scale-95 font-bold px-4 py-1 rounded"
