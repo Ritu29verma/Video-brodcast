@@ -143,6 +143,12 @@ exports.withdrawAmount = async (req, res) => {
     await adminWallet.save();
     const io = getIO();
     io.emit("adminWalletUpdated", { adminWalletBalance: adminWallet.balance });
+    let reservePercentage = adminWallet.reservePercentage;
+    let adminBalance = adminWallet.balance;
+    io.emit("reservePercentage",reservePercentage);
+    let safeLimit = (adminBalance) * (1-(reservePercentage / 100).toFixed(2)) ;
+    io.emit("reservedAmount",adminBalance*(reservePercentage / 100).toFixed(2))
+    io.emit("PayableAmount",safeLimit);
     res.json({ message: 'Withdrawal successful', newBalance: adminWallet.balance });
   } catch (error) {
     console.error('Error withdrawing amount:', error);
